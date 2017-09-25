@@ -97,6 +97,3 @@ ENV/
 # Game save files
 *.dat
 *.txt
-
-settings
-projects

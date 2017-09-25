@@ -17,9 +17,20 @@ working_height = monitor_info["Work"][3]
 app = QtWidgets.QApplication(sys.argv)
 
 
+def get_app_data_dir():
+    import os
+
+    app_data_dir = "{}\\Time Card App\\".format(os.getenv("LOCALAPPDATA"))
+
+    if not os.path.exists(app_data_dir):
+        os.makedirs(app_data_dir)
+
+    return app_data_dir
+
+
 def load_user_projects():
     try:
-        with open("./data/user_data/projects", "rb") as f:
+        with open(get_app_data_dir() + "projects", "rb") as f:
             user_projects = pickle.load(f)
 
         return user_projects
@@ -29,35 +40,25 @@ def load_user_projects():
 
 
 def save_user_projects(user_projects):
-    import os
-
-    if not os.path.exists("./data/user_data/"):
-        os.makedirs("./data/user_data/")
-
-    with open("./data/user_data/projects", "wb") as f:
+    with open(get_app_data_dir() + "projects", "wb") as f:
         pickle.dump(user_projects, f, protocol=3)
 
 
 def load_settings():
     try:
-        with open("./data/user_data/settings", "rb") as f:
+        with open(get_app_data_dir() + "settings", "rb") as f:
             settings = pickle.load(f)
 
         return settings
 
     except FileNotFoundError:
         return {
-            "version": "1.0.0"
+            "version": "1.0.1"
         }
 
 
 def save_settings(settings):
-    import os
-
-    if not os.path.exists("./data/user_data/"):
-        os.makedirs("./data/user_data/")
-
-    with open("./data/user_data/settings", "wb") as f:
+    with open(get_app_data_dir() + "settings", "wb") as f:
         pickle.dump(settings, f, protocol=3)
 
 
