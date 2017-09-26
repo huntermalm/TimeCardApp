@@ -427,7 +427,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.shadow = QtWidgets.QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(5)
+        self.shadow.setBlurRadius(10)
         self.shadow.setXOffset(0)
         self.setGraphicsEffect(self.shadow)
         self.setContentsMargins(0, 0, 0, 0)
@@ -518,27 +518,37 @@ class ProjectEntryWidget(QtWidgets.QWidget):
             scrollbar.setValue(scrollbar.maximum())
 
     def enable_check_button_label(self):
-        if self.line_edit.text():
+        disable = False
+        same_name = False
+
+        new_project_name = self.line_edit.text().strip()
+
+        if new_project_name:
             main_window = self.parent().parent().parent().parent().parent()
 
             same_name = False
 
             for user_project in main_window.user_projects:
-                if user_project.name == self.line_edit.text():
+                if user_project.name == new_project_name:
                     same_name = True
-
-            if same_name:
-                self.check_button_label.set_disabled()
-                self.check_button_label.setPixmap(QtGui.QPixmap.fromImage(self.check_button_label.caution_imgqt))
-                self.check_button_label.setToolTip("A project with this name already exists.")
+                    disable = True
 
             else:
                 self.check_button_label.set_disabled(False)
                 self.check_button_label.setToolTip("Confirm")
 
         else:
-            self.check_button_label.set_disabled()
-            self.check_button_label.setToolTip("Confirm")
+            disable = True
+
+        if disable:
+            if same_name:
+                self.check_button_label.set_disabled()
+                self.check_button_label.setPixmap(QtGui.QPixmap.fromImage(self.check_button_label.caution_imgqt))
+                self.check_button_label.setToolTip("A project with this name already exists.")
+
+            else:
+                self.check_button_label.set_disabled()
+                self.check_button_label.setToolTip("Confirm")
 
 
 class AddProjectButton(QtWidgets.QWidget):
@@ -546,7 +556,7 @@ class AddProjectButton(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.shadow = QtWidgets.QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(5)
+        self.shadow.setBlurRadius(10)
         self.shadow.setXOffset(0)
         self.setGraphicsEffect(self.shadow)
         self.setContentsMargins(0, 0, 0, 0)
