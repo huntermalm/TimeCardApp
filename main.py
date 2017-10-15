@@ -1,8 +1,8 @@
 import sys
 import win32api
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PIL import Image
-from PIL.ImageQt import ImageQt
+# from PIL import Image
+# from PIL.ImageQt import ImageQt
 from datetime import datetime
 from project import Project
 import pickle
@@ -121,24 +121,24 @@ class ScrollBar(QtWidgets.QScrollBar):
             background: none;
         }
 
-    """)
+        """)
 
 
 class ButtonLabel(QtWidgets.QLabel):
 
-    def __init__(self, image_before_hover, image_after_hover):
+    clicked = QtCore.pyqtSignal()
+
+    def __init__(self, image_before_path, image_after_path):
         super().__init__()
         self.disabled = False
         self.is_enabled = False  # Only for buttons that stay pressed!
-        self.image_before_hover = image_before_hover
-        self.image_before_hover_imgqt = ImageQt(self.image_before_hover)
-        self.disabled_image = self.get_disabled_image(image_before_hover)
-        self.disabled_image_imgqt = ImageQt(self.disabled_image)
-        self.image_after_hover = image_after_hover
-        self.image_after_hover_imgqt = ImageQt(self.image_after_hover)
-        self.setPixmap(QtGui.QPixmap.fromImage(self.image_before_hover_imgqt))
 
-    clicked = QtCore.pyqtSignal()
+        # self.disabled_image = self.get_disabled_image(image_before_hover)
+        # self.disabled_image_imgqt = ImageQt(self.disabled_image)
+
+        self.before_pixmap = QtGui.QPixmap(image_before_path)
+        self.after_pixmap = QtGui.QPixmap(image_after_path)
+        self.setPixmap(self.before_pixmap)
 
     def get_disabled_image(self, image):
         image_pixel_data = image.getdata()
@@ -146,7 +146,8 @@ class ButtonLabel(QtWidgets.QLabel):
         new_image_pixel_data = []
 
         for count, pixel in enumerate(image_pixel_data):
-            if pixel[3] != 0:
+            # if pixel[3] != 0:
+            if pixel[3] > 64:
                 new_pixel = (pixel[0], pixel[1], pixel[2], 64)
                 new_image_pixel_data.append(new_pixel)
 
@@ -161,11 +162,15 @@ class ButtonLabel(QtWidgets.QLabel):
     def set_disabled(self, condition=True):
         if condition:
             self.disabled = True
-            self.setPixmap(QtGui.QPixmap.fromImage(self.disabled_image_imgqt))
+            opacity_25 = QtWidgets.QGraphicsOpacityEffect(self)
+            opacity_25.setOpacity(0.5)
+            self.setGraphicsEffect(opacity_25)
 
         else:
             self.disabled = False
-            self.setPixmap(QtGui.QPixmap.fromImage(self.image_before_hover_imgqt))
+            opacity_100 = QtWidgets.QGraphicsOpacityEffect(self)
+            opacity_100.setOpacity(1.0)
+            self.setGraphicsEffect(opacity_100)
 
     def mousePressEvent(self, ev):
         if not self.disabled:
@@ -174,11 +179,11 @@ class ButtonLabel(QtWidgets.QLabel):
 
     def enterEvent(self, ev):
         if not self.disabled and not self.is_enabled:
-            self.setPixmap(QtGui.QPixmap.fromImage(self.image_after_hover_imgqt))
+            self.setPixmap(self.after_pixmap)
 
     def leaveEvent(self, ev):
         if not self.disabled and not self.is_enabled:
-            self.setPixmap(QtGui.QPixmap.fromImage(self.image_before_hover_imgqt))
+            self.setPixmap(self.before_pixmap)
 
 
 class ProjectOptionsWidget(QtWidgets.QWidget):
@@ -196,9 +201,7 @@ class ProjectOptionsWidget(QtWidgets.QWidget):
         self.project_options_hbox.setSpacing(0)
         self.project_options_hbox.addStretch()
 
-        delete_before_image = Image.open("./data/images/delete_before.png")
-        delete_after_image = Image.open("./data/images/delete_after.png")
-        delete_button_label = ButtonLabel(delete_before_image, delete_after_image)
+        delete_button_label = ButtonLabel("./data/images/delete_before.png", "./data/images/delete_after.png")
         delete_button_label.clicked.connect(self.delete_pressed)
         self.project_options_hbox.addWidget(delete_button_label)
         self.project_options_hbox.addSpacing(35)
@@ -304,26 +307,20 @@ class ProjectWidget(QtWidgets.QWidget):
 
         project_widget_hbox.addSpacing(20)
 
-        start_image_before_hover = Image.open("./data/images/start_before.png")
-        start_image_after_hover = Image.open("./data/images/start_after.png")
-        self.start_button_label = ButtonLabel(start_image_before_hover, start_image_after_hover)
+        self.start_button_label = ButtonLabel("./data/images/start_before.png", "./data/images/start_after.png")
         self.start_button_label.clicked.connect(self.start_pressed)
         project_widget_hbox.addWidget(self.start_button_label)
 
         project_widget_hbox.addWidget(get_separator(1, 18, fully_fixed=True))
 
-        end_image_before_hover = Image.open("./data/images/end_before.png")
-        end_image_after_hover = Image.open("./data/images/end_after.png")
-        self.end_button_label = ButtonLabel(end_image_before_hover, end_image_after_hover)
+        self.end_button_label = ButtonLabel("./data/images/end_before.png", "./data/images/end_after.png")
         self.end_button_label.clicked.connect(self.end_pressed)
         self.end_button_label.set_disabled()
         project_widget_hbox.addWidget(self.end_button_label)
 
         project_widget_hbox.addSpacing(10)
 
-        edit_before_image = Image.open("./data/images/edit_before.png")
-        edit_after_image = Image.open("./data/images/edit_after.png")
-        edit_button_label = ButtonLabel(edit_before_image, edit_after_image)
+        edit_button_label = ButtonLabel("./data/images/edit_before.png", "./data/images/edit_after.png")
         edit_button_label.clicked.connect(self.edit_pressed)
         project_widget_hbox.addWidget(edit_button_label)
 
@@ -426,10 +423,6 @@ class ProjectEntryWidget(QtWidgets.QWidget):
 
     def __init__(self):
         super().__init__()
-        self.shadow = QtWidgets.QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(10)
-        self.shadow.setXOffset(0)
-        self.setGraphicsEffect(self.shadow)
         self.setContentsMargins(0, 0, 0, 0)
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
         self.setStyleSheet("background-color:white;")
@@ -458,20 +451,15 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         project_entry_hbox.addWidget(self.line_edit)
         project_entry_hbox.addSpacing(10)
 
-        check_image_before_hover = Image.open("./data/images/check_before.png")
-        check_image_after_hover = Image.open("./data/images/check_after.png")
-        self.check_button_label = ButtonLabel(check_image_before_hover, check_image_after_hover)
-        caution_image = Image.open("./data/images/caution.png")
-        self.check_button_label.caution_imgqt = ImageQt(caution_image)
+        self.check_button_label = ButtonLabel("./data/images/check_before.png", "./data/images/check_after.png")
+        self.check_button_label.caution_pixmap = QtGui.QPixmap("./data/images/caution.png")
         self.check_button_label.clicked.connect(self.confirm)
         self.check_button_label.set_disabled()
         self.check_button_label.setToolTip("Confirm")
         project_entry_hbox.addWidget(self.check_button_label)
         project_entry_hbox.addSpacing(10)
 
-        cancel_image_before_hover = Image.open("./data/images/cancel_before.png")
-        cancel_image_after_hover = Image.open("./data/images/cancel_after.png")
-        self.cancel_button_label = ButtonLabel(cancel_image_before_hover, cancel_image_after_hover)
+        self.cancel_button_label = ButtonLabel("./data/images/cancel_before.png", "./data/images/cancel_after.png")
         self.cancel_button_label.clicked.connect(self.cancel)
         self.cancel_button_label.setToolTip("Cancel")
         project_entry_hbox.addWidget(self.cancel_button_label)
@@ -479,8 +467,6 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         project_entry_hbox.addSpacing(25)
 
         self.setLayout(project_entry_hbox)
-
-        self.hide()
 
     def cancel(self):
         main_window = self.parent().parent().parent().parent().parent()
@@ -534,6 +520,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
                     disable = True
 
             else:
+                self.check_button_label.setPixmap(self.check_button_label.before_pixmap)
                 self.check_button_label.set_disabled(False)
                 self.check_button_label.setToolTip("Confirm")
 
@@ -543,7 +530,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         if disable:
             if same_name:
                 self.check_button_label.set_disabled()
-                self.check_button_label.setPixmap(QtGui.QPixmap.fromImage(self.check_button_label.caution_imgqt))
+                self.check_button_label.setPixmap(self.check_button_label.caution_pixmap)
                 self.check_button_label.setToolTip("A project with this name already exists.")
 
             else:
@@ -552,13 +539,13 @@ class ProjectEntryWidget(QtWidgets.QWidget):
 
 
 class AddProjectButton(QtWidgets.QWidget):
-    # self.setPixmap(QtGui.QPixmap.fromImage(self.image_before_hover_imgqt))
+
     def __init__(self):
         super().__init__()
-        self.shadow = QtWidgets.QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(10)
-        self.shadow.setXOffset(0)
-        self.setGraphicsEffect(self.shadow)
+        # self.shadow = QtWidgets.QGraphicsDropShadowEffect(self)
+        # self.shadow.setBlurRadius(10)
+        # self.shadow.setXOffset(0)
+        # self.setGraphicsEffect(self.shadow)
         self.setContentsMargins(0, 0, 0, 0)
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
         self.setStyleSheet("background-color:white;")
@@ -569,12 +556,14 @@ class AddProjectButton(QtWidgets.QWidget):
         add_project_button_hbox.setContentsMargins(0, 0, 0, 0)
         add_project_button_hbox.addSpacing(10)
 
-        plus_before_image = Image.open("./data/images/plus_before.png")
-        self.plus_before_imgqt = ImageQt(plus_before_image)
-        plus_after_image = Image.open("./data/images/plus_after.png")
-        self.plus_after_imgqt = ImageQt(plus_after_image)
+        # plus_before_image = Image.open("./data/images/plus_before.png")
+        # self.plus_before_imgqt = ImageQt(plus_before_image)
+        # plus_after_image = Image.open("./data/images/plus_after.png")
+        # self.plus_after_imgqt = ImageQt(plus_after_image)
+        self.plus_before_pixmap = QtGui.QPixmap("./data/images/plus_before.png")
+        self.plus_after_pixmap = QtGui.QPixmap("./data/images/plus_after.png")
         self.plus_label = QtWidgets.QLabel()
-        self.plus_label.setPixmap(QtGui.QPixmap.fromImage(self.plus_before_imgqt))
+        self.plus_label.setPixmap(self.plus_before_pixmap)
         add_project_button_hbox.addWidget(self.plus_label)
         add_project_button_hbox.addSpacing(10)
 
@@ -597,11 +586,11 @@ class AddProjectButton(QtWidgets.QWidget):
 
     def enterEvent(self, ev):
         self.setStyleSheet("background-color:lightgrey;")
-        self.plus_label.setPixmap(QtGui.QPixmap.fromImage(self.plus_after_imgqt))
+        self.plus_label.setPixmap(self.plus_after_pixmap)
 
     def leaveEvent(self, ev):
         self.setStyleSheet("background-color:white;")
-        self.plus_label.setPixmap(QtGui.QPixmap.fromImage(self.plus_before_imgqt))
+        self.plus_label.setPixmap(self.plus_before_pixmap)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -665,34 +654,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         titlebar_hbox.addStretch()
 
-        pin_image_before_hover = Image.open("./data/images/pin_before.png")
-        pin_image_after_hover = Image.open("./data/images/pin_after.png")
-        self.pin_button_label = ButtonLabel(pin_image_before_hover, pin_image_after_hover)
+        self.pin_button_label = ButtonLabel("./data/images/pin_before.png", "./data/images/pin_after.png")
         self.pin_button_label.clicked.connect(self.pin)
         self.pin_button_label.setToolTip("Pin the window")
         titlebar_hbox.addWidget(self.pin_button_label)
         titlebar_hbox.addSpacing(5)
 
-        settings_image_before_hover = Image.open("./data/images/gear_before.png")
-        settings_image_after_hover = Image.open("./data/images/gear_after.png")
-        settings_button_label = ButtonLabel(settings_image_before_hover, settings_image_after_hover)
+        settings_button_label = ButtonLabel("./data/images/gear_before.png", "./data/images/gear_after.png")
         # settings_button_label.clicked.connect()
         settings_button_label.setToolTip("Settings (Coming Soon!)")
         titlebar_hbox.addWidget(settings_button_label)
         titlebar_hbox.addSpacing(5)
 
-        minimize_image_before_hover = Image.open("./data/images/minimize_black.png")
-        minimize_image_after_hover = Image.open("./data/images/minimize_green.png")
-        minimize_button_label = ButtonLabel(minimize_image_before_hover, minimize_image_after_hover)
+        minimize_button_label = ButtonLabel("./data/images/minimize_black.png", "./data/images/minimize_green.png")
         minimize_button_label.clicked.connect(self.minimize)
         minimize_button_label.setToolTip("Minimize to system tray")
         titlebar_hbox.addWidget(minimize_button_label)
         titlebar_hbox.addSpacing(5)
 
-        exit_image_before_hover = Image.open("./data/images/exit.png")
-        exit_image_before_hover.putalpha(64)
-        exit_image_after_hover = Image.open("./data/images/exit.png")
-        exit_button_label = ButtonLabel(exit_image_before_hover, exit_image_after_hover)
+        exit_button_label = ButtonLabel("./data/images/exit.png", "./data/images/exit.png")
         exit_button_label.clicked.connect(self.exit)
         exit_button_label.setToolTip("Exit")
         titlebar_hbox.addWidget(exit_button_label)
@@ -754,6 +734,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scroll_widget_vbox.addWidget(self.add_project_button)
 
         self.project_entry_widget = ProjectEntryWidget()
+        self.project_entry_widget.hide()
         self.scroll_widget_vbox.addWidget(self.project_entry_widget)
 
         self.scroll_widget_vbox.addWidget(get_separator(500, 1))
@@ -767,7 +748,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         # self.scroll_area.setFixedSize(500, 464)
         self.scroll_area.setMinimumWidth(500)
-        self.scroll_area.setMinimumHeight(464)
+        # self.scroll_area.setMinimumHeight(464)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -803,7 +784,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def pin(self):
         if self.pin_button_label.is_enabled:
             self.pin_button_label.is_enabled = False
-            self.pin_button_label.setPixmap(QtGui.QPixmap.fromImage(self.pin_button_label.image_before_hover_imgqt))
+            self.pin_button_label.setPixmap(self.pin_button_label.after_pixmap)
 
             self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
             self.pinned = False
@@ -811,9 +792,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             self.pin_button_label.is_enabled = True
-            pin_pressed_image = Image.open("./data/images/pin_pressed.png")
-            pin_pressed_imgqt = ImageQt(pin_pressed_image)
-            self.pin_button_label.setPixmap(QtGui.QPixmap.fromImage(pin_pressed_imgqt))
+            # pin_pressed_image = Image.open("./data/images/pin_pressed.png")
+            # pin_pressed_imgqt = ImageQt(pin_pressed_image)
+            pin_pressed_pixmap = QtGui.QPixmap("./data/images/pin_pressed.png")
+            self.pin_button_label.setPixmap(pin_pressed_pixmap)
 
             self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
             self.pinned = True
