@@ -1,12 +1,14 @@
 import sys
-import win32api
-from PyQt5 import QtCore, QtGui, QtWidgets
-# from PIL import Image
-# from PIL.ImageQt import ImageQt
-from datetime import datetime
-from project import Project
 import pickle
+import win32api
+from project import Project
+from datetime import datetime
+from PyQt5 import QtCore, QtGui, QtWidgets
+from GithubUpdater import get_latest_version
 
+
+version = "1.0.2"
+project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 monitor_handle = win32api.EnumDisplayMonitors()[0][0]
 monitor_info = win32api.GetMonitorInfo(monitor_handle)
@@ -843,9 +845,78 @@ class MainWindow(QtWidgets.QMainWindow):
             self.restore()
 
 
+class UpdateMessageWidget(QtWidgets.QWidget):
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Update Available")
+        self.setFixedSize(300, 125)
+
+        update_message_hbox = QtWidgets.QHBoxLayout()
+        update_message_hbox.addStretch()
+
+        update_message_vbox = QtWidgets.QVBoxLayout()
+
+        update_label = QtWidgets.QLabel("There is an update available.  Would you like to update?")
+        update_message_vbox.addWidget(update_label)
+
+        current_version_label = QtWidgets.QLabel(f"Current Version: {version}")
+        update_message_vbox.addWidget(current_version_label)
+
+        latest_version_label = QtWidgets.QLabel(f"Latest Version: {latest_version}")
+        update_message_vbox.addWidget(latest_version_label)
+
+        update_message_vbox.addStretch()
+
+        button_hbox = QtWidgets.QHBoxLayout()
+
+        yes_button = QtWidgets.QPushButton("Yes")
+        yes_button.clicked.connect(self.yes_clicked)
+        button_hbox.addWidget(yes_button)
+
+        no_button = QtWidgets.QPushButton("No")
+        no_button.clicked.connect(self.no_clicked)
+        button_hbox.addWidget(no_button)
+
+        update_message_vbox.addLayout(button_hbox)
+
+        update_message_hbox.addLayout(update_message_vbox)
+
+        update_message_hbox.addStretch()
+
+        self.setLayout(update_message_hbox)
+
+    def closeEvent(self, ev):
+        main_window.show()
+        self.hide()
+        ev.ignore()
+
+    def no_clicked(self):
+        main_window.show()
+        self.hide()
+
+    def yes_clicked(self):
+        self.hide()
+        print("UPDATING")
+        main_window.show()
+
+
 if __name__ == "__main__":
     main_window = MainWindow()
-    main_window.show()
-    app.setActiveWindow(main_window)
+
+    # This will be to update user files after software update
+    if main_window.settings["version"] != version:
+        main_window.settings["version"] = version
+        save_settings(main_window.settings)
+
+    latest_version = get_latest_version(project_url)
+
+    if version != latest_version:
+        update_message_widget = UpdateMessageWidget()
+        update_message_widget.show()
+
+    else:
+        main_window.show()
+        app.setActiveWindow(main_window)
 
     sys.exit(app.exec_())
