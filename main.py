@@ -415,13 +415,13 @@ class ProjectWidget(QtWidgets.QWidget):
         s_string = str(round(s))
 
         if len(h_string) == 1:
-            h_string = "0{}".format(h_string)
+            h_string = f"0{h_string}"
         if len(m_string) == 1:
-            m_string = "0{}".format(m_string)
+            m_string = f"0{m_string}"
         if len(s_string) == 1:
-            s_string = "0{}".format(s_string)
+            s_string = f"0{s_string}"
 
-        self.project_time_label.setText("{}:{}:{}".format(h_string, m_string, s_string))
+        self.project_time_label.setText(f"{h_string}:{m_string}:{s_string}")
 
 
 class ProjectEntryWidget(QtWidgets.QWidget):
