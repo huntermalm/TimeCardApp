@@ -22,7 +22,7 @@ To launch the TimeCardApp from the source code, you run the following from the p
 
 > python3 ./main.py
 
-#### Installation
+## Installation
 
 Grab the latest setup from the downloads below, and run through the basic installation wizard.
 

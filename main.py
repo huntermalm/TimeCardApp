@@ -245,8 +245,6 @@ class ProjectWidget(QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.tick)
         self.setContentsMargins(0, 0, 0, 0)
-        # self.setAttribute(QtCore.Qt.WA_StyledBackground)
-        # self.setStyleSheet("background-color:black;")
         self.project = user_project
         self.setFixedHeight(45)
 
@@ -539,10 +537,6 @@ class AddProjectButton(QtWidgets.QWidget):
         add_project_button_hbox.setContentsMargins(0, 0, 0, 0)
         add_project_button_hbox.addSpacing(10)
 
-        # plus_before_image = Image.open("./data/images/plus_before.png")
-        # self.plus_before_imgqt = ImageQt(plus_before_image)
-        # plus_after_image = Image.open("./data/images/plus_after.png")
-        # self.plus_after_imgqt = ImageQt(plus_after_image)
         self.plus_before_pixmap = QtGui.QPixmap("./data/images/plus_before.png")
         self.plus_after_pixmap = QtGui.QPixmap("./data/images/plus_after.png")
         self.plus_label = QtWidgets.QLabel()
@@ -775,8 +769,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             self.pin_button_label.is_enabled = True
-            # pin_pressed_image = Image.open("./data/images/pin_pressed.png")
-            # pin_pressed_imgqt = ImageQt(pin_pressed_image)
             pin_pressed_pixmap = QtGui.QPixmap("./data/images/pin_pressed.png")
             self.pin_button_label.setPixmap(pin_pressed_pixmap)
 
