@@ -1,13 +1,16 @@
 import sys
 import pickle
+import requests
 import win32api
 from project import Project
 from datetime import datetime
+from bs4 import BeautifulSoup as soup
 from PyQt5 import QtCore, QtGui, QtWidgets
+from urllib.request import urlopen as uReq
 from GithubUpdater import get_latest_version
 
 
-version = "1.0.2"
+version = "1.1.0"
 project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 monitor_handle = win32api.EnumDisplayMonitors()[0][0]
@@ -55,7 +58,7 @@ def load_settings():
 
     except FileNotFoundError:
         return {
-            "version": "1.0.2"
+            "version": "1.1.0"
         }
 
 
@@ -674,7 +677,7 @@ class MainWindow(QtWidgets.QMainWindow):
         titlebar_hbox.addWidget(minimize_button_label)
         titlebar_hbox.addSpacing(5)
 
-        exit_button_label = ButtonLabel("./data/images/exit.png", "./data/images/exit.png")
+        exit_button_label = ButtonLabel("./data/images/exit_before.png", "./data/images/exit_after.png")
         exit_button_label.clicked.connect(self.exit)
         exit_button_label.setToolTip("Exit")
         titlebar_hbox.addWidget(exit_button_label)
@@ -845,6 +848,68 @@ class MainWindow(QtWidgets.QMainWindow):
             self.restore()
 
 
+class UpdateDownloadWidget(QtWidgets.QWidget):
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Downloading Update...")
+        self.setFixedSize(300, 100)
+
+        self.init_download_url_and_filename(project_url)
+
+        self.hbox = QtWidgets.QHBoxLayout()
+
+        self.vbox = QtWidgets.QVBoxLayout()
+        self.vbox.addStretch()
+
+        file_name_label = QtWidgets.QLabel(self.file_name)
+        self.vbox.addWidget(file_name_label)
+
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.sizeHint()
+        self.vbox.addWidget(self.progress_bar)
+
+        self.vbox.addStretch()
+
+        self.hbox.addLayout(self.vbox)
+
+        self.setLayout(self.hbox)
+
+    def init_download_url_and_filename(self, project_url):
+        if project_url[-1] == "/":
+            project_url = project_url[0:-1]
+
+        latest_release_url = f"{project_url}/releases/latest"
+        uClient = uReq(latest_release_url)
+        page_html = uClient.read()
+        uClient.close()
+        page_soup = soup(page_html, "html.parser")
+        download = page_soup.findAll("ul", {"class": "release-downloads"})[0]
+
+        self.download_url = "https://github.com" + download.li.a["href"]
+        self.file_name = self.download_url.split('/')[-1]
+
+    def download_update(self):
+        dl = 0
+
+        with open(get_app_data_dir() + self.file_name, "wb") as f:
+            response = requests.get(self.download_url, stream=True)
+            total_length = response.headers.get('content-length')
+
+            if total_length is None:
+                f.write(response.content)
+
+            else:
+                for data in response.iter_content(1024):
+                    dl += len(data)
+                    f.write(data)
+                    amount_done = int(100 * dl / int(total_length))
+                    self.progress_bar.setValue(amount_done)
+
+                    if amount_done == 100:
+                        self.hide()
+
+
 class UpdateMessageWidget(QtWidgets.QWidget):
 
     def __init__(self):
@@ -897,8 +962,17 @@ class UpdateMessageWidget(QtWidgets.QWidget):
 
     def yes_clicked(self):
         self.hide()
-        print("UPDATING")
-        main_window.show()
+        update_download_widget.show()
+        app.processEvents()
+        update_download_widget.download_update()
+        main_window.trayIcon.hide()
+        app.quit()
+
+        import subprocess
+        subprocess.call([get_app_data_dir() + update_download_widget.file_name])
+
+        import os
+        os.remove(get_app_data_dir() + update_download_widget.file_name)
 
 
 if __name__ == "__main__":
@@ -914,6 +988,8 @@ if __name__ == "__main__":
     if version != latest_version:
         update_message_widget = UpdateMessageWidget()
         update_message_widget.show()
+
+        update_download_widget = UpdateDownloadWidget()
 
     else:
         main_window.show()
