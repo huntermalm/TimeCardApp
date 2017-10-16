@@ -138,31 +138,9 @@ class ButtonLabel(QtWidgets.QLabel):
         self.disabled = False
         self.is_enabled = False  # Only for buttons that stay pressed!
 
-        # self.disabled_image = self.get_disabled_image(image_before_hover)
-        # self.disabled_image_imgqt = ImageQt(self.disabled_image)
-
         self.before_pixmap = QtGui.QPixmap(image_before_path)
         self.after_pixmap = QtGui.QPixmap(image_after_path)
         self.setPixmap(self.before_pixmap)
-
-    def get_disabled_image(self, image):
-        image_pixel_data = image.getdata()
-
-        new_image_pixel_data = []
-
-        for count, pixel in enumerate(image_pixel_data):
-            # if pixel[3] != 0:
-            if pixel[3] > 64:
-                new_pixel = (pixel[0], pixel[1], pixel[2], 64)
-                new_image_pixel_data.append(new_pixel)
-
-            else:
-                new_image_pixel_data.append(pixel)
-
-        new_image = Image.new("RGBA", (image.width, image.height))
-        new_image.putdata(new_image_pixel_data)
-
-        return new_image
 
     def set_disabled(self, condition=True):
         if condition:
@@ -968,11 +946,11 @@ class UpdateMessageWidget(QtWidgets.QWidget):
         main_window.trayIcon.hide()
         app.quit()
 
-        import subprocess
-        subprocess.call([get_app_data_dir() + update_download_widget.file_name])
+        from subprocess import call
+        call([get_app_data_dir() + update_download_widget.file_name])
 
-        import os
-        os.remove(get_app_data_dir() + update_download_widget.file_name)
+        from os import remove
+        remove(get_app_data_dir() + update_download_widget.file_name)
 
 
 if __name__ == "__main__":
