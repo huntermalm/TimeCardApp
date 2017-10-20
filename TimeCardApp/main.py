@@ -1,3 +1,4 @@
+import os
 import sys
 import pickle
 import requests
@@ -10,8 +11,13 @@ from urllib.request import urlopen as uReq
 from GithubUpdater import get_latest_version
 
 
-version = "1.1.0"
+version = "1.0.2"
 project_url = "https://github.com/huntermalm/TimeCardApp/"
+
+app_data_dir = os.getenv("LOCALAPPDATA")
+user_data_dir = f"{app_data_dir}\\Time Card App\\"
+
+program_data_dir = os.getcwd()[:-12] + "\\data"
 
 monitor_handle = win32api.EnumDisplayMonitors()[0][0]
 monitor_info = win32api.GetMonitorInfo(monitor_handle)
@@ -22,20 +28,20 @@ working_height = monitor_info["Work"][3]
 app = QtWidgets.QApplication(sys.argv)
 
 
-def get_app_data_dir():
-    import os
+# def get_app_data_dir():
+#     import os
 
-    app_data_dir = "{}\\Time Card App\\".format(os.getenv("LOCALAPPDATA"))
+#     app_data_dir = "{}\\Time Card App\\".format(os.getenv("LOCALAPPDATA"))
 
-    if not os.path.exists(app_data_dir):
-        os.makedirs(app_data_dir)
+#     if not os.path.exists(app_data_dir):
+#         os.makedirs(app_data_dir)
 
-    return app_data_dir
+#     return app_data_dir
 
 
 def load_user_projects():
     try:
-        with open(get_app_data_dir() + "projects", "rb") as f:
+        with open(user_data_dir + "projects", "rb") as f:
             user_projects = pickle.load(f)
 
         return user_projects
@@ -45,25 +51,25 @@ def load_user_projects():
 
 
 def save_user_projects(user_projects):
-    with open(get_app_data_dir() + "projects", "wb") as f:
+    with open(user_data_dir + "projects", "wb") as f:
         pickle.dump(user_projects, f, protocol=3)
 
 
 def load_settings():
     try:
-        with open(get_app_data_dir() + "settings", "rb") as f:
+        with open(user_data_dir + "settings", "rb") as f:
             settings = pickle.load(f)
 
         return settings
 
     except FileNotFoundError:
         return {
-            "version": "1.1.0"
+            "version": "1.0.2"
         }
 
 
 def save_settings(settings):
-    with open(get_app_data_dir() + "settings", "wb") as f:
+    with open(user_data_dir + "settings", "wb") as f:
         pickle.dump(settings, f, protocol=3)
 
 
@@ -184,7 +190,7 @@ class ProjectOptionsWidget(QtWidgets.QWidget):
         self.project_options_hbox.setSpacing(0)
         self.project_options_hbox.addStretch()
 
-        delete_button_label = ButtonLabel("./data/images/delete_before.png", "./data/images/delete_after.png")
+        delete_button_label = ButtonLabel(program_data_dir + "/images/delete_before.png", program_data_dir + "/images/delete_after.png")
         delete_button_label.clicked.connect(self.delete_pressed)
         self.project_options_hbox.addWidget(delete_button_label)
         self.project_options_hbox.addSpacing(35)
@@ -288,20 +294,20 @@ class ProjectWidget(QtWidgets.QWidget):
 
         project_widget_hbox.addSpacing(20)
 
-        self.start_button_label = ButtonLabel("./data/images/start_before.png", "./data/images/start_after.png")
+        self.start_button_label = ButtonLabel(program_data_dir + "/images/start_before.png", program_data_dir + "/images/start_after.png")
         self.start_button_label.clicked.connect(self.start_pressed)
         project_widget_hbox.addWidget(self.start_button_label)
 
         project_widget_hbox.addWidget(get_separator(1, 18, fully_fixed=True))
 
-        self.end_button_label = ButtonLabel("./data/images/end_before.png", "./data/images/end_after.png")
+        self.end_button_label = ButtonLabel(program_data_dir + "/images/end_before.png", program_data_dir + "/images/end_after.png")
         self.end_button_label.clicked.connect(self.end_pressed)
         self.end_button_label.set_disabled()
         project_widget_hbox.addWidget(self.end_button_label)
 
         project_widget_hbox.addSpacing(10)
 
-        edit_button_label = ButtonLabel("./data/images/edit_before.png", "./data/images/edit_after.png")
+        edit_button_label = ButtonLabel(program_data_dir + "/images/edit_before.png", program_data_dir + "/images/edit_after.png")
         edit_button_label.clicked.connect(self.edit_pressed)
         project_widget_hbox.addWidget(edit_button_label)
 
@@ -432,15 +438,15 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         project_entry_hbox.addWidget(self.line_edit)
         project_entry_hbox.addSpacing(10)
 
-        self.check_button_label = ButtonLabel("./data/images/check_before.png", "./data/images/check_after.png")
-        self.check_button_label.caution_pixmap = QtGui.QPixmap("./data/images/caution.png")
+        self.check_button_label = ButtonLabel(program_data_dir + "/images/check_before.png", program_data_dir + "/images/check_after.png")
+        self.check_button_label.caution_pixmap = QtGui.QPixmap(program_data_dir + "/images/caution.png")
         self.check_button_label.clicked.connect(self.confirm)
         self.check_button_label.set_disabled()
         self.check_button_label.setToolTip("Confirm")
         project_entry_hbox.addWidget(self.check_button_label)
         project_entry_hbox.addSpacing(10)
 
-        self.cancel_button_label = ButtonLabel("./data/images/cancel_before.png", "./data/images/cancel_after.png")
+        self.cancel_button_label = ButtonLabel(program_data_dir + "/images/cancel_before.png", program_data_dir + "/images/cancel_after.png")
         self.cancel_button_label.clicked.connect(self.cancel)
         self.cancel_button_label.setToolTip("Cancel")
         project_entry_hbox.addWidget(self.cancel_button_label)
@@ -537,8 +543,8 @@ class AddProjectButton(QtWidgets.QWidget):
         add_project_button_hbox.setContentsMargins(0, 0, 0, 0)
         add_project_button_hbox.addSpacing(10)
 
-        self.plus_before_pixmap = QtGui.QPixmap("./data/images/plus_before.png")
-        self.plus_after_pixmap = QtGui.QPixmap("./data/images/plus_after.png")
+        self.plus_before_pixmap = QtGui.QPixmap(program_data_dir + "/images/plus_before.png")
+        self.plus_after_pixmap = QtGui.QPixmap(program_data_dir + "/images/plus_after.png")
         self.plus_label = QtWidgets.QLabel()
         self.plus_label.setPixmap(self.plus_before_pixmap)
         add_project_button_hbox.addWidget(self.plus_label)
@@ -631,25 +637,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         titlebar_hbox.addStretch()
 
-        self.pin_button_label = ButtonLabel("./data/images/pin_before.png", "./data/images/pin_after.png")
+        self.pin_button_label = ButtonLabel(program_data_dir + "/images/pin_before.png", program_data_dir + "/images/pin_after.png")
         self.pin_button_label.clicked.connect(self.pin)
         self.pin_button_label.setToolTip("Pin the window")
         titlebar_hbox.addWidget(self.pin_button_label)
         titlebar_hbox.addSpacing(5)
 
-        settings_button_label = ButtonLabel("./data/images/gear_before.png", "./data/images/gear_after.png")
+        settings_button_label = ButtonLabel(program_data_dir + "/images/gear_before.png", program_data_dir + "/images/gear_after.png")
         # settings_button_label.clicked.connect()
         settings_button_label.setToolTip("Settings (Coming Soon!)")
         titlebar_hbox.addWidget(settings_button_label)
         titlebar_hbox.addSpacing(5)
 
-        minimize_button_label = ButtonLabel("./data/images/minimize_black.png", "./data/images/minimize_green.png")
+        minimize_button_label = ButtonLabel(program_data_dir + "/images/minimize_black.png", program_data_dir + "/images/minimize_green.png")
         minimize_button_label.clicked.connect(self.minimize)
         minimize_button_label.setToolTip("Minimize to system tray")
         titlebar_hbox.addWidget(minimize_button_label)
         titlebar_hbox.addSpacing(5)
 
-        exit_button_label = ButtonLabel("./data/images/exit_before.png", "./data/images/exit_after.png")
+        exit_button_label = ButtonLabel(program_data_dir + "/images/exit_before.png", program_data_dir + "/images/exit_after.png")
         exit_button_label.clicked.connect(self.exit)
         exit_button_label.setToolTip("Exit")
         titlebar_hbox.addWidget(exit_button_label)
@@ -769,7 +775,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         else:
             self.pin_button_label.is_enabled = True
-            pin_pressed_pixmap = QtGui.QPixmap("./data/images/pin_pressed.png")
+            pin_pressed_pixmap = QtGui.QPixmap(program_data_dir + "/images/pin_pressed.png")
             self.pin_button_label.setPixmap(pin_pressed_pixmap)
 
             self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
@@ -796,7 +802,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QCoreApplication.instance().quit()
 
     def setIcon(self):
-        icon = QtGui.QIcon("./data/images/icon.png")
+        icon = QtGui.QIcon(program_data_dir + "/images/icon.png")
         self.trayIcon.setIcon(icon)
         self.setWindowIcon(icon)
 
@@ -862,7 +868,7 @@ class UpdateDownloadWidget(QtWidgets.QWidget):
     def download_update(self):
         dl = 0
 
-        with open(get_app_data_dir() + self.file_name, "wb") as f:
+        with open(user_data_dir + self.file_name, "wb") as f:
             response = requests.get(self.download_url, stream=True)
             total_length = response.headers.get('content-length')
 
@@ -939,10 +945,10 @@ class UpdateMessageWidget(QtWidgets.QWidget):
         app.quit()
 
         from subprocess import call
-        call([get_app_data_dir() + update_download_widget.file_name])
+        call([user_data_dir + update_download_widget.file_name])
 
         from os import remove
-        remove(get_app_data_dir() + update_download_widget.file_name)
+        remove(user_data_dir + update_download_widget.file_name)
 
 
 if __name__ == "__main__":
