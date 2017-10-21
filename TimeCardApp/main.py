@@ -11,7 +11,7 @@ from urllib.request import urlopen as uReq
 from GithubUpdater import get_latest_version
 
 
-version = "1.0.2"
+version = "1.1.0"
 project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 app_data_dir = os.getenv("LOCALAPPDATA")
@@ -26,17 +26,6 @@ working_height = monitor_info["Work"][3]
 
 
 app = QtWidgets.QApplication(sys.argv)
-
-
-# def get_app_data_dir():
-#     import os
-
-#     app_data_dir = "{}\\Time Card App\\".format(os.getenv("LOCALAPPDATA"))
-
-#     if not os.path.exists(app_data_dir):
-#         os.makedirs(app_data_dir)
-
-#     return app_data_dir
 
 
 def load_user_projects():
@@ -799,7 +788,7 @@ class MainWindow(QtWidgets.QMainWindow):
         save_settings(self.settings)
 
         self.trayIcon.hide()
-        QtCore.QCoreApplication.instance().quit()
+        app.quit()
 
     def setIcon(self):
         icon = QtGui.QIcon(program_data_dir + "/images/icon.png")
@@ -830,6 +819,7 @@ class UpdateDownloadWidget(QtWidgets.QWidget):
         super().__init__()
         self.setWindowTitle("Downloading Update...")
         self.setFixedSize(300, 100)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
         self.init_download_url_and_filename(project_url)
 
@@ -935,6 +925,7 @@ class UpdateMessageWidget(QtWidgets.QWidget):
     def no_clicked(self):
         main_window.show()
         self.hide()
+        self.deleteLater()
 
     def yes_clicked(self):
         self.hide()
