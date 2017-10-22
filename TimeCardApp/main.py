@@ -1,7 +1,6 @@
 import os
 import sys
 import pickle
-import psutil
 import requests
 import win32api
 from project import Project
@@ -9,10 +8,11 @@ from datetime import datetime
 from bs4 import BeautifulSoup as soup
 from PyQt5 import QtCore, QtGui, QtWidgets
 from urllib.request import urlopen as uReq
+from urllib import error
 from GithubUpdater import get_latest_version
 
 
-version = "1.2.1"
+version = "1.2.2"
 project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 app_data_dir = os.getenv("LOCALAPPDATA")
@@ -26,43 +26,34 @@ working_height = monitor_info["Work"][3]
 
 app = QtWidgets.QApplication(sys.argv)
 
+# Load Settings
+try:
+    with open(user_data_dir + "settings", "rb") as f:
+        settings = pickle.load(f)
 
-def load_user_projects():
-    try:
-        with open(user_data_dir + "projects", "rb") as f:
-            user_projects = pickle.load(f)
+except FileNotFoundError:
+    settings = {
+        "version": "1.2.2",
+        "check_for_updates": True
+    }
 
-        return user_projects
+# Load Project Data
+try:
+    with open(user_data_dir + "project_data", "rb") as f:
+        project_data = pickle.load(f)
 
-    except FileNotFoundError:
-        return []
-
-
-def save_user_projects(user_projects):
-    with open(user_data_dir + "projects", "wb") as f:
-        pickle.dump(user_projects, f, protocol=3)
-
-
-def load_settings():
-    try:
-        with open(user_data_dir + "settings", "rb") as f:
-            settings = pickle.load(f)
-
-        return settings
-
-    except FileNotFoundError:
-        return {
-            "version": "1.2.1",
-            "check_for_updates": True
-        }
+except FileNotFoundError:
+    project_data = []
 
 
-settings = load_settings()
-
-
-def save_settings(settings):
+def save_settings():
     with open(user_data_dir + "settings", "wb") as f:
         pickle.dump(settings, f, protocol=3)
+
+
+def save_project_data():
+    with open(user_data_dir + "project_data", "wb") as f:
+        pickle.dump(project_data, f, protocol=3)
 
 
 def get_separator(width, height, fully_fixed=False):
@@ -218,12 +209,12 @@ class ProjectOptionsWidget(QtWidgets.QWidget):
                 project_widget.project_options_separator.hide()
                 project_widget.project_options_separator.deleteLater()
 
-                for project_count, user_project in enumerate(main_window.user_projects):
+                for project_count, user_project in enumerate(project_data):
                     if project_widget.project is user_project:
-                        del main_window.user_projects[project_count]
+                        del project_data[project_count]
                         break
 
-                save_user_projects(main_window.user_projects)
+                save_project_data()
 
                 restore_buttons = project_widget.active
 
@@ -348,7 +339,7 @@ class ProjectWidget(QtWidgets.QWidget):
         self.project.times.append(time_tuple)
 
         main_window = self.parent().parent().parent().parent().parent()
-        save_user_projects(main_window.user_projects)
+        save_project_data()
 
         self.total_time = 0
 
@@ -461,7 +452,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
             main_window = self.parent().parent().parent().parent().parent()
             scroll_widget_vbox = main_window.scroll_widget_vbox
 
-            main_window.user_projects.append(new_project)
+            project_data.append(new_project)
 
             new_project_widget = ProjectWidget(new_project)
             scroll_widget_vbox.insertWidget(scroll_widget_vbox.count() - 4, new_project_widget)
@@ -475,7 +466,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
             scroll_widget_vbox.insertWidget(scroll_widget_vbox.count() - 4, new_project_widget.project_options_widget)
             scroll_widget_vbox.insertWidget(scroll_widget_vbox.count() - 4, new_project_widget.project_options_separator)
 
-            save_user_projects(main_window.user_projects)
+            save_project_data()
             main_window.add_project_button.show()
             self.hide()
 
@@ -493,7 +484,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
 
             same_name = False
 
-            for user_project in main_window.user_projects:
+            for user_project in project_data:
                 if user_project.name == new_project_name:
                     same_name = True
                     disable = True
@@ -655,11 +646,11 @@ class SettingsWidget(QtWidgets.QFrame):
     def check_for_updates_checked(self):
         if self.check_for_updates_checkbox.checkState() == QtCore.Qt.Checked:
             settings["check_for_updates"] = True
-            save_settings(settings)
+            save_settings()
 
         else:
             settings["check_for_updates"] = False
-            save_settings(settings)
+            save_settings()
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -668,7 +659,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.pinned = False
         self.moving = False
-        self.user_projects = load_user_projects()
+        # self.project_data = load_project_data()
         self.settings_widget = SettingsWidget()
         self.setWindowTitle("Time Card App")
         self.width = 500
@@ -790,7 +781,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.project_widgets = []
 
-        for user_project in self.user_projects:
+        for user_project in project_data:
             project_widget = ProjectWidget(user_project)
             self.project_widgets.append(project_widget)
             self.scroll_widget_vbox.addWidget(project_widget)
@@ -883,7 +874,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 project_widget.end_pressed()
                 break
 
-        save_settings(settings)
+        save_settings()
 
         self.trayIcon.hide()
         app.quit()
@@ -1041,24 +1032,41 @@ if __name__ == "__main__":
     # This will be to update user files after software update
     if settings["version"] != version:
 
-        if settings["version"] in "1.2.1 1.0.2 1.0.1 1.0.0".split():
+        if settings["version"] in "1.1.0 1.0.2 1.0.1 1.0.0".split():
             settings["check_for_updates"] = True
             settings["version"] = "1.2.0"
 
-        save_settings(settings)
+        if settings["version"] in "1.2.1 1.2.0".split():
+            if os.path.isfile(user_data_dir + "projects"):
+                with open(user_data_dir + "projects", "rb") as f:
+                    old_project_data = pickle.load(f)
+
+                project_data.extend(old_project_data)
+                save_project_data()
+                os.remove(user_data_dir + "projects")
+
+                settings["version"] = "1.2.2"
+
+        settings["version"] = version
+        save_settings()
 
     main_window = MainWindow()
 
     if settings["check_for_updates"]:
-        latest_version = get_latest_version(project_url)
+        try:
+            latest_version = get_latest_version(project_url)
 
-        if version != latest_version:
-            update_message_widget = UpdateMessageWidget()
-            update_message_widget.show()
+            if version != latest_version:
+                update_message_widget = UpdateMessageWidget()
+                update_message_widget.show()
 
-            update_download_widget = UpdateDownloadWidget()
+                update_download_widget = UpdateDownloadWidget()
 
-        else:
+            else:
+                main_window.show()
+                app.setActiveWindow(main_window)
+
+        except error.URLError:
             main_window.show()
             app.setActiveWindow(main_window)
 
