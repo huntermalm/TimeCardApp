@@ -3,8 +3,9 @@
 block_cipher = None
 
 
-a = Analysis(['main.py'],
-             pathex=['D:\\Portfolio\\Code\\Python\\Personal Projects\\TimeCardApp'],
+a = Analysis(['.\\TimeCardApp\\main.py'],
+             pathex=['D:\\Portfolio\\Code\\Python\\Personal Projects\\TimeCardApp',
+                     'D:\\Portfolio\\Code\\Python\\Personal Projects\\TimeCardApp'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -26,4 +27,4 @@ exe = EXE(pyz,
           strip=False,
           upx=True,
           runtime_tmpdir=None,
-          console=False, icon='./data/images/icon.ico')
+          console=False, icon='./TimeCardApp/data/images/icon.ico')
