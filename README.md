@@ -32,6 +32,7 @@ Grab the latest setup from the downloads below, and run through the basic instal
 * [TimeCardApp-1.2.2-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.2.2/TimeCardApp-1.2.2-setup.exe)
 * [TimeCardApp-1.2.1-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.2.1/TimeCardApp-1.2.1-setup.exe)
 * [TimeCardApp-1.2.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.2.0/TimeCardApp-1.2.0-setup.exe)
+* [TimeCardApp-1.1.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.1.0/TimeCardApp-1.1.0-setup.exe)
 * [TimeCardApp-1.0.2-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.0.2/TimeCardApp-1.0.2-setup.exe)
 * [TimeCardApp-1.0.1-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.0.1/TimeCardApp-1.0.1-setup.exe)
 * [TimeCardApp-1.0.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.0.0/TimeCardApp-1.0.0-setup.exe)
