@@ -14,7 +14,7 @@ app = QtWidgets.QApplication(sys.argv)
 from GithubUpdater import *
 from settings_widget import SettingsWidget
 
-app.version = "1.3.1"
+app.version = "1.4.0"
 app.project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 app.app_data_dir = os.getenv("LOCALAPPDATA")
@@ -43,7 +43,7 @@ try:
 
 except FileNotFoundError:
     app.settings = {
-        "version": "1.3.1",
+        "version": "1.4.0",
         "check_for_updates": True
     }
 
@@ -128,8 +128,15 @@ class FolderWidget(QtWidgets.QWidget):
         name_label_font.setPointSize(16)
         name_label.setFont(name_label_font)
 
-        # self.folder_time_label = QtWidgets.QLabel()
-        # self.folder_time_label.setText("— —")
+        self.time_label = QtWidgets.QLabel()
+
+        self.total_time = self.contents_total_time()
+
+        if self.total_time > 0:
+            self.update_time_label()
+
+        else:
+            self.time_label.setText("— —")
 
         self.add_project_button_label = ButtonLabel(app.program_data_dir + "/images/plus_before.png",
                                                     app.program_data_dir + "/images/plus_after.png")
@@ -148,9 +155,9 @@ class FolderWidget(QtWidgets.QWidget):
         main_hbox.addSpacing(10)
         main_hbox.addWidget(name_label)
         main_hbox.addStretch()
-        # main_hbox.addSpacing(20)
-        # main_hbox.addWidget(self.folder_time_label)
-        # main_hbox.addSpacing(20)
+        main_hbox.addSpacing(20)
+        main_hbox.addWidget(self.time_label)
+        main_hbox.addSpacing(20)
         main_hbox.addWidget(self.add_project_button_label)
         main_hbox.addSpacing(12)
         main_hbox.addWidget(self.add_folder_button_label)
@@ -167,6 +174,19 @@ class FolderWidget(QtWidgets.QWidget):
         main_vbox.addWidget(self.contents_widget)
 
         self.setLayout(main_vbox)
+
+    def contents_total_time(self):
+        total_time = 0
+
+        if self.folder_widgets:
+            for folder_widget in self.folder_widgets:
+                if folder_widget.file.type() == "project":
+                    total_time += folder_widget.total_time
+
+                else:
+                    total_time += folder_widget.contents_total_time()
+
+        return total_time
 
     def init_contents_widget(self):
         self.contents_widget = QtWidgets.QWidget()
@@ -343,6 +363,8 @@ class FolderWidget(QtWidgets.QWidget):
                 parent_folder_widget.collapse_button.is_enabled = False
                 parent_folder_widget.collapse_button.set_disabled(True)
 
+            parent_folder_widget.tick()
+
         self.erase_widgets()
 
         for count, file_widget in enumerate(app.all_file_widgets):
@@ -384,22 +406,22 @@ class FolderWidget(QtWidgets.QWidget):
             self.options_separator.show()
 
     def tick(self):
-        self.total_time = 0
+        self.total_time = self.contents_total_time()
+        self.update_time_label()
 
-        for time in self.project.times:
-            self.total_time += (time[1] - time[0]).total_seconds()
+        if not self.root:
+            parent_folder_widget = self.parent().parent()
+            parent_folder_widget.tick()
 
-        self.total_time += (datetime.now() - self.start_time).total_seconds()
-
-        self.update_project_time_label()
-
-    def update_project_time_label(self):
+    def update_time_label(self):
         d = divmod(self.total_time, 86400)
         h = divmod(d[1], 3600)
         m = divmod(h[1], 60)
         s = m[1]
 
-        h_string = str(int(h[0]))
+        h_including_days = h[0] + (d[0] * 24)
+
+        h_string = str(int(h_including_days))
         m_string = str(int(m[0]))
         s_string = str(round(s))
 
@@ -410,7 +432,12 @@ class FolderWidget(QtWidgets.QWidget):
         if len(s_string) == 1:
             s_string = f"0{s_string}"
 
-        self.project_time_label.setText(f"{h_string}:{m_string}:{s_string}")
+        time_string = f"{h_string}:{m_string}:{s_string}"
+
+        if time_string == "00:00:00":
+            time_string = "— —"
+
+        self.time_label.setText(time_string)
 
 
 class ProjectWidget(QtWidgets.QWidget):
@@ -563,6 +590,8 @@ class ProjectWidget(QtWidgets.QWidget):
                 parent_folder_widget.collapse_button.is_enabled = False
                 parent_folder_widget.collapse_button.set_disabled(True)
 
+            parent_folder_widget.tick()
+
         for count, file_widget in enumerate(app.all_file_widgets):
             if self is file_widget:
                 del app.all_file_widgets[count]
@@ -645,13 +674,19 @@ class ProjectWidget(QtWidgets.QWidget):
 
         self.update_project_time_label()
 
+        if not self.root:
+            parent_folder_widget = self.parent().parent()
+            parent_folder_widget.tick()
+
     def update_project_time_label(self):
         d = divmod(self.total_time, 86400)
         h = divmod(d[1], 3600)
         m = divmod(h[1], 60)
         s = m[1]
 
-        h_string = str(int(h[0]))
+        h_including_days = h[0] + (d[0] * 24)
+
+        h_string = str(int(h_including_days))
         m_string = str(int(m[0]))
         s_string = str(round(s))
 
@@ -662,7 +697,12 @@ class ProjectWidget(QtWidgets.QWidget):
         if len(s_string) == 1:
             s_string = f"0{s_string}"
 
-        self.project_time_label.setText(f"{h_string}:{m_string}:{s_string}")
+        time_string = f"{h_string}:{m_string}:{s_string}"
+
+        if time_string == "00:00:00":
+            time_string = "— —"
+
+        self.project_time_label.setText(time_string)
 
 
 class ProjectEntryWidget(QtWidgets.QWidget):
