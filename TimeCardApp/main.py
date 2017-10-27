@@ -14,7 +14,7 @@ app = QtWidgets.QApplication(sys.argv)
 from GithubUpdater import *
 from settings_widget import SettingsWidget
 
-app.version = "1.3.0"
+app.version = "1.3.1"
 app.project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 app.app_data_dir = os.getenv("LOCALAPPDATA")
@@ -43,7 +43,7 @@ try:
 
 except FileNotFoundError:
     app.settings = {
-        "version": "1.3.0",
+        "version": "1.3.1",
         "check_for_updates": True
     }
 
@@ -57,6 +57,9 @@ except FileNotFoundError:
 
 
 def save_settings():
+    if not os.path.isdir(app.user_data_dir):
+        os.makedirs(app.user_data_dir)
+
     with open(app.user_data_dir + "settings", "wb") as f:
         pickle.dump(app.settings, f, protocol=3)
 
@@ -65,6 +68,9 @@ app.save_settings = save_settings
 
 
 def save_project_data():
+    if not os.path.isdir(app.user_data_dir):
+        os.makedirs(app.user_data_dir)
+
     with open(app.user_data_dir + "project_data", "wb") as f:
         pickle.dump(app.project_data, f, protocol=3)
 
