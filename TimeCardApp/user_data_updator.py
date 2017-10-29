@@ -1,3 +1,12 @@
+def add_attribute_to_projects(file, var_name, value):
+    if file.type() == "project":
+        file.__dict__[var_name] = value
+
+    else:
+        for folder_file in file.files:
+            add_attribute_to_projects(folder_file, var_name, value)
+
+
 def update_user_data(settings, project_data, user_data_dir):
     import os
     import pickle
@@ -19,7 +28,6 @@ def update_user_data(settings, project_data, user_data_dir):
     if settings["version"] in "1.2.2 1.3.0 1.3.1 1.4.0".split():
         if project_data:
             for file in project_data:
-                if file.type() == "project":
-                    file.hotkey = None
+                add_attribute_to_projects(file, "hotkey", None)
 
-        settings["version"] = "1.2.2"
+        settings["version"] = "1.5.0"
