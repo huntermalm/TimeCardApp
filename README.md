@@ -17,6 +17,7 @@ You may also download a .zip of the project [here](https://github.com/huntermalm
 * pypiwin32
 * bs4
 * requests
+* system_hotkey
 
 To launch the TimeCardApp from the source code, you run the following from the project's directory:
 
