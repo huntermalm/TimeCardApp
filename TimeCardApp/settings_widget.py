@@ -25,7 +25,7 @@ class SettingsWidget(QtWidgets.QFrame):
 
         self.main_vbox.addWidget(self.titlebar)
 
-        self.main_vbox.addWidget(get_separator(498, 1))
+        self.main_vbox.addWidget(get_separator(2, 1))
 
         self.settings_vbox = QtWidgets.QVBoxLayout()
         self.settings_vbox.setSpacing(10)

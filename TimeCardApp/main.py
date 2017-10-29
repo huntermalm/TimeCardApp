@@ -8,13 +8,15 @@ from extra_widgets import *
 from datetime import datetime
 from PyQt5 import QtCore, QtGui, QtWidgets
 from user_data_updator import update_user_data
+from system_hotkey import SystemHotkey
 
 
 app = QtWidgets.QApplication(sys.argv)
 from GithubUpdater import *
 from settings_widget import SettingsWidget
+from hotkey_widget import HotkeyWidget
 
-app.version = "1.4.0"
+app.version = "1.5.0"
 app.project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 app.app_data_dir = os.getenv("LOCALAPPDATA")
@@ -25,6 +27,8 @@ monitor_handle = win32api.EnumDisplayMonitors()[0][0]
 monitor_info = win32api.GetMonitorInfo(monitor_handle)
 working_width = monitor_info["Work"][2]
 working_height = monitor_info["Work"][3]
+
+app.hotkeys = SystemHotkey()
 
 rainbow_colors = {
     0: "236, 34, 68",
@@ -43,7 +47,7 @@ try:
 
 except FileNotFoundError:
     app.settings = {
-        "version": "1.4.0",
+        "version": "1.5.0",
         "check_for_updates": True
     }
 
@@ -73,6 +77,9 @@ def save_project_data():
 
     with open(app.user_data_dir + "project_data", "wb") as f:
         pickle.dump(app.project_data, f, protocol=3)
+
+
+app.save_project_data = save_project_data
 
 
 class FolderWidget(QtWidgets.QWidget):
@@ -262,18 +269,18 @@ class FolderWidget(QtWidgets.QWidget):
         self.options_widget.setStyleSheet("background-color:lightgrey;")
         self.options_widget.setFixedHeight(50)
 
-        project_options_hbox = QtWidgets.QHBoxLayout()
-        project_options_hbox.setContentsMargins(0, 0, 0, 0)
-        project_options_hbox.setSpacing(0)
-        project_options_hbox.addStretch()
+        options_hbox = QtWidgets.QHBoxLayout()
+        options_hbox.setContentsMargins(0, 0, 0, 0)
+        options_hbox.setSpacing(0)
+        options_hbox.addStretch()
 
         delete_button_label = ButtonLabel(app.program_data_dir + "/images/delete_before.png",
                                           app.program_data_dir + "/images/delete_after.png")
         delete_button_label.clicked.connect(self.delete_pressed)
-        project_options_hbox.addWidget(delete_button_label)
-        project_options_hbox.addSpacing(35)
+        options_hbox.addWidget(delete_button_label)
+        options_hbox.addSpacing(35)
 
-        self.options_widget.setLayout(project_options_hbox)
+        self.options_widget.setLayout(options_hbox)
 
         self.shadow = QtWidgets.QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(50)
@@ -384,6 +391,9 @@ class FolderWidget(QtWidgets.QWidget):
             if folder_widget.file.type() == "folder":
                 folder_widget.erase_widgets()
 
+            else:
+                folder_widget.unregister_hotkey()
+
             for count, file_widget in enumerate(app.all_file_widgets):
                 if folder_widget is file_widget:
                     del app.all_file_widgets[count]
@@ -453,6 +463,12 @@ class ProjectWidget(QtWidgets.QWidget):
         self.is_showing_options = False
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.tick)
+        self.timer.start(1000)
+
+        if self.file.hotkey:
+            self.register_hotkey(self.file.hotkey)
+
+        self.hotkey_assignment_widget = HotkeyWidget(file, self)
 
         self.separator = get_separator(2, 1)
         self.init_options_widget()
@@ -526,20 +542,56 @@ class ProjectWidget(QtWidgets.QWidget):
         self.options_widget = QtWidgets.QWidget()
         self.options_widget.setAttribute(QtCore.Qt.WA_StyledBackground)
         self.options_widget.setStyleSheet("background-color:lightgrey;")
-        self.options_widget.setFixedHeight(50)
+        self.options_widget.setFixedHeight(65)
 
-        project_options_hbox = QtWidgets.QHBoxLayout()
-        project_options_hbox.setContentsMargins(0, 0, 0, 0)
-        project_options_hbox.setSpacing(0)
-        project_options_hbox.addStretch()
+        options_hbox = QtWidgets.QHBoxLayout()
+        options_hbox.setContentsMargins(0, 0, 0, 0)
+        options_hbox.setSpacing(0)
 
-        delete_button_label = ButtonLabel(app.program_data_dir + "/images/delete_before.png",
-                                          app.program_data_dir + "/images/delete_after.png")
-        delete_button_label.clicked.connect(self.delete_pressed)
-        project_options_hbox.addWidget(delete_button_label)
-        project_options_hbox.addSpacing(35)
+        hotkey_vbox = QtWidgets.QVBoxLayout()
+        hotkey_vbox.setContentsMargins(0, 0, 0, 0)
+        hotkey_vbox.setSpacing(0)
 
-        self.options_widget.setLayout(project_options_hbox)
+        hotkey_hbox = QtWidgets.QHBoxLayout()
+        hotkey_hbox.setContentsMargins(0, 0, 0, 0)
+        hotkey_hbox.setSpacing(0)
+
+        delete_button = ButtonLabel(app.program_data_dir + "/images/delete_before.png",
+                                    app.program_data_dir + "/images/delete_after.png")
+        delete_button.clicked.connect(self.delete_pressed)
+
+        hotkey_bold_label = QtWidgets.QLabel("Hotkey:")
+        hotkey_bold_label_font = QtGui.QFont()
+        hotkey_bold_label_font.setBold(True)
+        hotkey_bold_label.setFont(hotkey_bold_label_font)
+
+        if self.file.hotkey:
+            self.hotkey_label = QtWidgets.QLabel(self.hotkey_assignment_widget.get_hotkey_string())
+
+        else:
+            self.hotkey_label = QtWidgets.QLabel("Unassigned")
+
+        assign_hotkey_button = ButtonLabel(app.program_data_dir + "/images/assign_hotkey_before.png",
+                                           app.program_data_dir + "/images/assign_hotkey_after.png")
+        assign_hotkey_button.clicked.connect(self.assign_hotkey_pressed)
+
+        hotkey_hbox.addWidget(hotkey_bold_label)
+        hotkey_hbox.addSpacing(3)
+        hotkey_hbox.addWidget(self.hotkey_label)
+
+        hotkey_vbox.addSpacing(10)
+        hotkey_vbox.addLayout(hotkey_hbox)
+        hotkey_vbox.addSpacing(3)
+        hotkey_vbox.addWidget(assign_hotkey_button)
+        hotkey_vbox.addSpacing(10)
+
+        options_hbox.addSpacing(15)
+        options_hbox.addLayout(hotkey_vbox)
+        options_hbox.addStretch()
+        options_hbox.addWidget(delete_button)
+        options_hbox.addSpacing(35)
+
+        self.options_widget.setLayout(options_hbox)
 
         self.shadow = QtWidgets.QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(50)
@@ -550,6 +602,33 @@ class ProjectWidget(QtWidgets.QWidget):
         # self.shadow_widget.setStyleSheet("background-color:black;")
         self.shadow_widget.setGraphicsEffect(self.shadow)
         self.shadow_widget.move(0, -45)
+
+    def assign_hotkey_pressed(self):
+        for file_widget in app.all_file_widgets:
+            if file_widget.file.type() == "project":
+                if file_widget.hotkey_assignment_widget.isVisible():
+                    file_widget.hotkey_assignment_widget.hide()
+
+        self.hotkey_assignment_widget.show()
+
+    def register_hotkey(self, hotkey_tuple):
+        app.hotkeys.register(hotkey_tuple, callback=self.hotkey_triggered)
+
+    def unregister_hotkey(self):
+        if self.file.hotkey:
+            app.hotkeys.unregister(self.file.hotkey)
+
+    def hotkey_triggered(self, event):
+        for file_widget in app.all_file_widgets:
+            if file_widget.file.type() == "project" and file_widget is not self:
+                if file_widget.active:
+                    return
+
+        if self.active:
+            self.end_pressed()
+
+        else:
+            self.start_pressed()
 
     def delete_pressed(self):
         self.hide()
@@ -592,6 +671,8 @@ class ProjectWidget(QtWidgets.QWidget):
 
             parent_folder_widget.tick()
 
+        self.unregister_hotkey()
+
         for count, file_widget in enumerate(app.all_file_widgets):
             if self is file_widget:
                 del app.all_file_widgets[count]
@@ -628,7 +709,7 @@ class ProjectWidget(QtWidgets.QWidget):
 
     def start_pressed(self):
         self.start_time = datetime.now()
-        self.timer.start(1000)
+        # self.timer.start(1000)
         self.active = True
 
         self.start_button_label.set_disabled()
@@ -641,7 +722,7 @@ class ProjectWidget(QtWidgets.QWidget):
 
     def end_pressed(self):
         end_time = datetime.now()
-        self.timer.stop()
+        # self.timer.stop()
         time_tuple = (self.start_time, end_time)
         self.file.times.append(time_tuple)
 
@@ -665,18 +746,19 @@ class ProjectWidget(QtWidgets.QWidget):
                     file_widget.start_button_label.set_disabled(False)
 
     def tick(self):
-        self.total_time = 0
+        if self.active:
+            self.total_time = 0
 
-        for time in self.file.times:
-            self.total_time += (time[1] - time[0]).total_seconds()
+            for time in self.file.times:
+                self.total_time += (time[1] - time[0]).total_seconds()
 
-        self.total_time += (datetime.now() - self.start_time).total_seconds()
+            self.total_time += (datetime.now() - self.start_time).total_seconds()
 
-        self.update_project_time_label()
+            self.update_project_time_label()
 
-        if not self.root:
-            parent_folder_widget = self.parent().parent()
-            parent_folder_widget.tick()
+            if not self.root:
+                parent_folder_widget = self.parent().parent()
+                parent_folder_widget.tick()
 
     def update_project_time_label(self):
         d = divmod(self.total_time, 86400)
@@ -1139,8 +1221,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.trayIcon.show()
 
     def eventFilter(self, object, event):
-        if not self.settings_widget.isVisible():
-            if event.type() == QtCore.QEvent.WindowDeactivate:
+        if event.type() == QtCore.QEvent.WindowDeactivate:
+            stop = False
+
+            for file_widget in app.all_file_widgets:
+                if file_widget.file.type() == "project":
+                    if file_widget.hotkey_assignment_widget.isVisible():
+                        stop = True
+
+            if not self.settings_widget.isVisible() and not stop:
                 if(not self.trayIcon.geometry().contains(QtGui.QCursor().pos()) and
                    not object.geometry().contains(QtGui.QCursor().pos()) and
                    not self.pinned):

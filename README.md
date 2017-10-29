@@ -27,7 +27,8 @@ To launch the TimeCardApp from the source code, you run the following from the p
 Grab the latest setup from the downloads below, and run through the basic installation wizard.
 
 ## Downloads
-* [TimeCardApp-1.4.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.4.0/TimeCardApp-1.4.0-setup.exe) <- *Recommended*
+* [TimeCardApp-1.5.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.5.0/TimeCardApp-1.5.0-setup.exe) <- *Recommended*
+* [TimeCardApp-1.4.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.4.0/TimeCardApp-1.4.0-setup.exe)
 * [TimeCardApp-1.3.1-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.3.1/TimeCardApp-1.3.1-setup.exe)
 * [TimeCardApp-1.3.0-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.3.0/TimeCardApp-1.3.0-setup.exe)
 * [TimeCardApp-1.2.2-setup.exe](https://github.com/huntermalm/TimeCardApp/releases/download/1.2.2/TimeCardApp-1.2.2-setup.exe)
