@@ -98,7 +98,8 @@ class HotkeyWidget(QtWidgets.QFrame):
         self.setWindowTitle("Hotkey Assignment")
         self.setFixedSize(400, 150)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
-        self.setStyleSheet("background: white;")
+        self.setObjectName("hotkeyWidget")
+        self.setStyleSheet(f"QWidget#hotkeyWidget {{ background: {app.active_theme['primary_color']}; }}")
         self.setFrameStyle(QtWidgets.QFrame.Box)
 
         self.main_vbox = QtWidgets.QVBoxLayout()
@@ -119,61 +120,39 @@ class HotkeyWidget(QtWidgets.QFrame):
 
         self.init_titlebar()
 
-        project_label = QtWidgets.QLabel(f"{self.file.name}")
+        self.project_label = QtWidgets.QLabel(self.file.name)
+        self.project_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         project_label_font = QtGui.QFont()
         project_label_font.setBold(True)
-        project_label.setFont(project_label_font)
+        self.project_label.setFont(project_label_font)
 
         self.checkboxes = []
 
         self.ctrl_checkbox = QtWidgets.QCheckBox("Ctrl +")
+        self.ctrl_checkbox.setStyleSheet(f"color: {app.active_theme['font_color']};")
         self.checkboxes.append(self.ctrl_checkbox)
         self.ctrl_checkbox.stateChanged.connect(self.checkbox_changed)
 
         self.shift_checkbox = QtWidgets.QCheckBox("Shift +")
+        self.shift_checkbox.setStyleSheet(f"color: {app.active_theme['font_color']};")
         self.checkboxes.append(self.shift_checkbox)
         self.shift_checkbox.stateChanged.connect(self.checkbox_changed)
 
         self.alt_checkbox = QtWidgets.QCheckBox("Alt +")
+        self.alt_checkbox.setStyleSheet(f"color: {app.active_theme['font_color']};")
         self.checkboxes.append(self.alt_checkbox)
         self.alt_checkbox.stateChanged.connect(self.checkbox_changed)
 
         self.win_checkbox = QtWidgets.QCheckBox("Win +")
+        self.win_checkbox.setStyleSheet(f"color: {app.active_theme['font_color']};")
         self.checkboxes.append(self.win_checkbox)
         self.win_checkbox.stateChanged.connect(self.checkbox_changed)
 
-        self.key_combobox = QtWidgets.QComboBox()
+        self.key_combobox = ComboBox()
         self.key_combobox.setFixedWidth(95)
         self.key_combobox.currentIndexChanged.connect(self.combobox_changed)
-        self.key_combobox.setStyleSheet("""QComboBox {
-                                            border: 1px solid gray;
-                                            padding: 1px 18px 1px 3px;
-                                        }
-
-                                        QComboBox:editable {
-                                            background: white;
-                                        }
-
-                                        QComboBox::drop-down {
-                                            subcontrol-origin: padding;
-                                            subcontrol-position: top right;
-                                            width: 15px;
-
-                                            border-left-width: 0px;
-                                            border-left-color: darkgray;
-                                            border-left-style: solid; /* just a single line */
-                                            border-top-right-radius: 3px; /* same radius as the QComboBox */
-                                            border-bottom-right-radius: 3px;
-                                        }
-
-                                        QComboBox::down-arrow {
-                                            image: url(./data/images/arrow_down_02.png);
-                                        }
-
-                                        QComboBox QAbstractItemView {
-                                            selection-background-color: lightgray;
-                                        }
-                                        """)
+        self.scrollbar = ScrollBar()
+        self.key_combobox.view().setVerticalScrollBar(self.scrollbar)
         for key in key_dict:
             self.key_combobox.addItem(key)
 
@@ -194,7 +173,7 @@ class HotkeyWidget(QtWidgets.QFrame):
         self.main_vbox.addWidget(self.titlebar)
         self.main_vbox.addWidget(get_separator(2, 1))
 
-        self.hotkey_vbox.addWidget(project_label)
+        self.hotkey_vbox.addWidget(self.project_label)
 
         self.hotkey_options_hbox.addStretch()
         self.hotkey_options_hbox.addWidget(self.ctrl_checkbox)
@@ -218,6 +197,18 @@ class HotkeyWidget(QtWidgets.QFrame):
         self.main_vbox.addStretch()
 
         self.setLayout(self.main_vbox)
+
+    def reset_stylesheet(self):
+        self.setStyleSheet(f"QWidget#hotkeyWidget {{ background: {app.active_theme['primary_color']}; }}")
+        self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
+        self.window_title_label.setStyleSheet(f"color:{app.active_theme['font_color']};")
+        self.project_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+
+        for checkbox in self.checkboxes:
+            checkbox.setStyleSheet(f"color: {app.active_theme['font_color']}")
+
+        self.key_combobox.reset_stylesheet()
+        self.scrollbar.reset_stylesheet()
 
     def setup_widget(self):
         if self.file.hotkey:
@@ -340,17 +331,16 @@ class HotkeyWidget(QtWidgets.QFrame):
     def assign_pressed(self):
         amount_checked = self.get_amount_checked()
 
+        if self.file.hotkey:
+            self.parent_project_widget.unregister_hotkey()
+
         if amount_checked == 0 and self.key_combobox.currentIndex() == 0:
-            if self.file.hotkey:
-                self.parent_project_widget.hotkey_label.setText("Unassigned")
-                self.parent_project_widget.unregister_hotkey()
-                self.file.hotkey = None
+            self.parent_project_widget.hotkey_label.setText("Unassigned")
+            self.file.hotkey = None
 
         else:
             self.parent_project_widget.register_hotkey(self.get_hotkey_tuple())
-
             self.parent_project_widget.hotkey_label.setText(self.get_hotkey_string())
-
             self.file.hotkey = self.get_hotkey_tuple()
 
         self.hide()
@@ -363,18 +353,19 @@ class HotkeyWidget(QtWidgets.QFrame):
     def init_titlebar(self):
         self.titlebar = QtWidgets.QWidget()
         self.titlebar.setFixedHeight(34)
-        self.titlebar.setStyleSheet("background-color:lightgrey;")
+        self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
 
         titlebar_hbox = QtWidgets.QHBoxLayout()
         titlebar_hbox.setContentsMargins(0, 0, 0, 0)
         titlebar_hbox.setSpacing(0)
-        titlebar_hbox.addSpacing(3)
+        titlebar_hbox.addSpacing(10)
 
-        window_title_label = QtWidgets.QLabel("Hotkey Assignment")
+        self.window_title_label = QtWidgets.QLabel("Hotkey Assignment")
+        self.window_title_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         font = QtGui.QFont()
         font.setPointSize(12)
-        window_title_label.setFont(font)
-        titlebar_hbox.addWidget(window_title_label)
+        self.window_title_label.setFont(font)
+        titlebar_hbox.addWidget(self.window_title_label)
 
         titlebar_hbox.addStretch()
 
@@ -383,7 +374,7 @@ class HotkeyWidget(QtWidgets.QFrame):
         exit_button_label.clicked.connect(self.cancel_pressed)
         exit_button_label.setToolTip("Exit")
         titlebar_hbox.addWidget(exit_button_label)
-        titlebar_hbox.addSpacing(5)
+        titlebar_hbox.addSpacing(10)
 
         self.titlebar.setLayout(titlebar_hbox)
 

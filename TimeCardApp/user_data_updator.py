@@ -31,3 +31,7 @@ def update_user_data(settings, project_data, user_data_dir):
                 add_attribute_to_projects(file, "hotkey", None)
 
         settings["version"] = "1.5.0"
+
+    if settings["version"] == "1.5.0":
+        settings["theme"] = "Light"
+        settings["version"] = "1.6.0"

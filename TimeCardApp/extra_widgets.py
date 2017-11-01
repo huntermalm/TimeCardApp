@@ -1,6 +1,9 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
+app = QtCore.QCoreApplication.instance()
+
+
 def get_separator(width, height, fully_fixed=False):
     separator = QtWidgets.QWidget()
 
@@ -20,47 +23,93 @@ def get_separator(width, height, fully_fixed=False):
     return separator
 
 
+class ComboBox(QtWidgets.QComboBox):
+
+    def __init__(self):
+        super().__init__()
+        self.reset_stylesheet()
+
+    def reset_stylesheet(self):
+        self.setStyleSheet(f"""
+            QComboBox {{
+                background: {app.active_theme['primary_color']};
+                border: 1px solid {app.active_theme['secondary_color']};
+                color: {app.active_theme['font_color']};
+            }}
+
+            QComboBox:editable {{
+                background: white;
+            }}
+
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 15px;
+
+                border-left-width: 0px;
+                border-left-color: darkgray;
+                border-left-style: solid; /* just a single line */
+                border-top-right-radius: 3px; /* same radius as the QComboBox */
+                border-bottom-right-radius: 3px;
+            }}
+
+            QComboBox::down-arrow {{
+                image: url(./data/images/arrow_down_02.png);
+            }}
+
+            QComboBox QAbstractItemView {{
+                selection-background-color: {app.active_theme['secondary_color']};
+                outline: none;
+                background: {app.active_theme['primary_color']};
+                border: 1px solid {app.active_theme['secondary_color']};
+                color: {app.active_theme['font_color']};
+            }}
+            """)
+
+
 class ScrollBar(QtWidgets.QScrollBar):
     def __init__(self):
         super().__init__()
+        self.reset_stylesheet()
 
+    def reset_stylesheet(self):
         self.setStyleSheet("""
         /* VERTICAL */
-        QScrollBar:vertical {
+        QScrollBar:vertical {{
             border: none;
-            background: none;
+            background: {};
             width: 10px;
             margin: 0px 0 0px 0;
-        }
+        }}
 
-        QScrollBar::handle:vertical {
-            background: darkgrey;
+        QScrollBar::handle:vertical {{
+            background: {};
             min-height: 26px;
-        }
+        }}
 
-        QScrollBar::add-line:vertical {
+        QScrollBar::add-line:vertical {{
             border: none;
             background: none;
-        }
+        }}
 
-        QScrollBar::sub-line:vertical {
+        QScrollBar::sub-line:vertical {{
             height: 0px;
             width: 0px;
             border: none;
             background: none;
-        }
+        }}
 
-        QScrollBar:up-arrow:vertical, QScrollBar::down-arrow:vertical {
+        QScrollBar:up-arrow:vertical, QScrollBar::down-arrow:vertical {{
             border: none;
             background: none;
             color: none;
-        }
+        }}
 
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
             background: none;
-        }
+        }}
 
-        """)
+        """.format(app.active_theme["scrollbar_background"], app.active_theme["scrollbar_handle"]))
 
 
 class ButtonLabel(QtWidgets.QLabel):
@@ -81,7 +130,7 @@ class ButtonLabel(QtWidgets.QLabel):
         if condition:
             self.disabled = True
             opacity_25 = QtWidgets.QGraphicsOpacityEffect(self)
-            opacity_25.setOpacity(0.5)
+            opacity_25.setOpacity(0.25)
             self.setGraphicsEffect(opacity_25)
 
         else:

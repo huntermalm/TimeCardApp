@@ -4,7 +4,6 @@ import pickle
 import win32api
 from project import *
 from urllib import error
-from extra_widgets import *
 from datetime import datetime
 from PyQt5 import QtCore, QtGui, QtWidgets
 from user_data_updator import update_user_data
@@ -12,11 +11,31 @@ from system_hotkey import SystemHotkey
 
 
 app = QtWidgets.QApplication(sys.argv)
+
+app.themes = {
+    "Light": {
+        "primary_color": "white",
+        "secondary_color": "lightgray",
+        "font_color": "black",
+        "scrollbar_background": "#F0F0F0",
+        "scrollbar_handle": "#A9A9A9"
+        },
+
+    "Dark": {
+        "primary_color": "#383838",
+        "secondary_color": "#2A2A2A",
+        "font_color": "lightgray",
+        "scrollbar_background": "#2C2C2C",
+        "scrollbar_handle": "#1B1B1B"
+        }
+    }
+
 from GithubUpdater import *
+from extra_widgets import *
 from settings_widget import SettingsWidget
 from hotkey_widget import HotkeyWidget
 
-app.version = "1.5.0"
+app.version = "1.6.0"
 app.project_url = "https://github.com/huntermalm/TimeCardApp/"
 
 app.app_data_dir = os.getenv("LOCALAPPDATA")
@@ -47,8 +66,9 @@ try:
 
 except FileNotFoundError:
     app.settings = {
-        "version": "1.5.0",
-        "check_for_updates": True
+        "version": "1.6.0",
+        "check_for_updates": True,
+        "theme": "Light"
     }
 
 # Load Project Data
@@ -80,6 +100,15 @@ def save_project_data():
 
 
 app.save_project_data = save_project_data
+
+
+def center_window(top_window, bottom_window):
+    top_window_new_x = bottom_window.x() + (bottom_window.width() // 2) - (top_window.width() // 2)
+    top_window_new_y = bottom_window.y() + (bottom_window.height() // 2) - (top_window.height() // 2)
+    top_window.move(top_window_new_x, top_window_new_y)
+
+
+# app.center_window = center_window
 
 
 class FolderWidget(QtWidgets.QWidget):
@@ -130,12 +159,14 @@ class FolderWidget(QtWidgets.QWidget):
         if not self.file.files:
             self.collapse_button.set_disabled()
 
-        name_label = QtWidgets.QLabel(self.file.name)
+        self.name_label = QtWidgets.QLabel(self.file.name)
+        self.name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         name_label_font = QtGui.QFont()
         name_label_font.setPointSize(16)
-        name_label.setFont(name_label_font)
+        self.name_label.setFont(name_label_font)
 
         self.time_label = QtWidgets.QLabel()
+        self.time_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
 
         self.total_time = self.contents_total_time()
 
@@ -160,7 +191,7 @@ class FolderWidget(QtWidgets.QWidget):
         main_hbox.addSpacing(10)
         main_hbox.addWidget(self.collapse_button)
         main_hbox.addSpacing(10)
-        main_hbox.addWidget(name_label)
+        main_hbox.addWidget(self.name_label)
         main_hbox.addStretch()
         main_hbox.addSpacing(20)
         main_hbox.addWidget(self.time_label)
@@ -170,7 +201,7 @@ class FolderWidget(QtWidgets.QWidget):
         main_hbox.addWidget(self.add_folder_button_label)
         main_hbox.addSpacing(12)
         main_hbox.addWidget(edit_button_label)
-        main_hbox.addSpacing(25)
+        main_hbox.addSpacing(15)
 
         main_widget.setLayout(main_hbox)
 
@@ -213,7 +244,7 @@ class FolderWidget(QtWidgets.QWidget):
 
         color_tab = QtWidgets.QWidget()
         color_tab.setAttribute(QtCore.Qt.WA_StyledBackground)
-        color_tab.setStyleSheet(f"background-color: rgb({self.get_color()});")
+        color_tab.setStyleSheet(f"background: rgb({self.get_color()});")
         color_tab.setFixedWidth(7)
 
         self.entry_separator = get_separator(2, 1)
@@ -266,7 +297,7 @@ class FolderWidget(QtWidgets.QWidget):
     def init_options_widget(self):
         self.options_widget = QtWidgets.QWidget()
         self.options_widget.setAttribute(QtCore.Qt.WA_StyledBackground)
-        self.options_widget.setStyleSheet("background-color:lightgrey;")
+        self.options_widget.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
         self.options_widget.setFixedHeight(50)
 
         options_hbox = QtWidgets.QHBoxLayout()
@@ -288,9 +319,19 @@ class FolderWidget(QtWidgets.QWidget):
         self.shadow_widget = QtWidgets.QWidget(self.options_widget)
         self.shadow_widget.setFixedHeight(45)
         self.shadow_widget.setMinimumWidth(working_width)
-        # self.shadow_widget.setStyleSheet("background-color:black;")
+        # self.shadow_widget.setStyleSheet("background:black;")
         self.shadow_widget.setGraphicsEffect(self.shadow)
         self.shadow_widget.move(0, -45)
+
+    def reset_stylesheet(self):
+        self.name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.time_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.options_widget.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
+        self.project_entry_widget.reset_stylesheet()
+        self.folder_entry_widget.reset_stylesheet()
+
+        for folder_widget in self.folder_widgets:
+            folder_widget.reset_stylesheet()
 
     def collapse_pressed(self):
         if self.collapsed:
@@ -486,12 +527,14 @@ class ProjectWidget(QtWidgets.QWidget):
         main_vbox.setContentsMargins(0, 0, 0, 0)
         main_vbox.setSpacing(0)
 
-        project_name_label = QtWidgets.QLabel(self.file.name)
+        self.project_name_label = QtWidgets.QLabel(f"{self.file.name}")
+        self.project_name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         project_name_label_font = QtGui.QFont()
         project_name_label_font.setPointSize(16)
-        project_name_label.setFont(project_name_label_font)
+        self.project_name_label.setFont(project_name_label_font)
 
         self.project_time_label = QtWidgets.QLabel()
+        self.project_time_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         self.total_time = 0
 
         if self.file.times:
@@ -501,7 +544,7 @@ class ProjectWidget(QtWidgets.QWidget):
             self.update_project_time_label()
 
         else:
-            self.project_time_label.setText("— —")
+            self.project_time_label.setText(f"— —")
 
         self.start_button_label = ButtonLabel(app.program_data_dir + "/images/start_before.png",
                                               app.program_data_dir + "/images/start_after.png")
@@ -516,8 +559,8 @@ class ProjectWidget(QtWidgets.QWidget):
                                         app.program_data_dir + "/images/edit_after.png")
         edit_button_label.clicked.connect(self.edit_pressed)
 
-        main_hbox.addSpacing(5)
-        main_hbox.addWidget(project_name_label)
+        main_hbox.addSpacing(15)
+        main_hbox.addWidget(self.project_name_label)
         main_hbox.addStretch()
         main_hbox.addSpacing(20)
         main_hbox.addWidget(self.project_time_label)
@@ -527,7 +570,7 @@ class ProjectWidget(QtWidgets.QWidget):
         main_hbox.addWidget(self.end_button_label)
         main_hbox.addSpacing(10)
         main_hbox.addWidget(edit_button_label)
-        main_hbox.addSpacing(25)
+        main_hbox.addSpacing(15)
 
         main_widget.setLayout(main_hbox)
 
@@ -541,7 +584,7 @@ class ProjectWidget(QtWidgets.QWidget):
     def init_options_widget(self):
         self.options_widget = QtWidgets.QWidget()
         self.options_widget.setAttribute(QtCore.Qt.WA_StyledBackground)
-        self.options_widget.setStyleSheet("background-color:lightgrey;")
+        self.options_widget.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
         self.options_widget.setFixedHeight(65)
 
         options_hbox = QtWidgets.QHBoxLayout()
@@ -560,22 +603,26 @@ class ProjectWidget(QtWidgets.QWidget):
                                     app.program_data_dir + "/images/delete_after.png")
         delete_button.clicked.connect(self.delete_pressed)
 
-        hotkey_bold_label = QtWidgets.QLabel("Hotkey:")
+        self.hotkey_bold_label = QtWidgets.QLabel("Hotkey:")
+        self.hotkey_bold_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         hotkey_bold_label_font = QtGui.QFont()
         hotkey_bold_label_font.setBold(True)
-        hotkey_bold_label.setFont(hotkey_bold_label_font)
+        self.hotkey_bold_label.setFont(hotkey_bold_label_font)
+
+        self.hotkey_label = QtWidgets.QLabel()
+        self.hotkey_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
 
         if self.file.hotkey:
-            self.hotkey_label = QtWidgets.QLabel(self.hotkey_assignment_widget.get_hotkey_string())
+            self.hotkey_label.setText(self.hotkey_assignment_widget.get_hotkey_string())
 
         else:
-            self.hotkey_label = QtWidgets.QLabel("Unassigned")
+            self.hotkey_label.setText("Unassigned")
 
         assign_hotkey_button = ButtonLabel(app.program_data_dir + "/images/assign_hotkey_before.png",
                                            app.program_data_dir + "/images/assign_hotkey_after.png")
         assign_hotkey_button.clicked.connect(self.assign_hotkey_pressed)
 
-        hotkey_hbox.addWidget(hotkey_bold_label)
+        hotkey_hbox.addWidget(self.hotkey_bold_label)
         hotkey_hbox.addSpacing(3)
         hotkey_hbox.addWidget(self.hotkey_label)
 
@@ -599,9 +646,18 @@ class ProjectWidget(QtWidgets.QWidget):
         self.shadow_widget = QtWidgets.QWidget(self.options_widget)
         self.shadow_widget.setFixedHeight(45)
         self.shadow_widget.setMinimumWidth(working_width)
-        # self.shadow_widget.setStyleSheet("background-color:black;")
+        # self.shadow_widget.setStyleSheet("background:black;")
         self.shadow_widget.setGraphicsEffect(self.shadow)
         self.shadow_widget.move(0, -45)
+
+    def reset_stylesheet(self):
+        self.project_name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.project_time_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.options_widget.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
+        self.hotkey_bold_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.hotkey_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+
+        self.hotkey_assignment_widget.reset_stylesheet()
 
     def assign_hotkey_pressed(self):
         for file_widget in app.all_file_widgets:
@@ -609,6 +665,7 @@ class ProjectWidget(QtWidgets.QWidget):
                 if file_widget.hotkey_assignment_widget.isVisible():
                     file_widget.hotkey_assignment_widget.hide()
 
+        center_window(self.hotkey_assignment_widget, app.main_window)
         self.hotkey_assignment_widget.show()
 
     def register_hotkey(self, hotkey_tuple):
@@ -792,7 +849,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
     def __init__(self, root=False):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
-        self.setStyleSheet("background-color:white;")
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
         self.setFixedHeight(45)
 
         self.root = root
@@ -800,17 +857,19 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         main_hbox = QtWidgets.QHBoxLayout()
         main_hbox.setContentsMargins(0, 0, 0, 0)
         main_hbox.setSpacing(0)
-        main_hbox.addSpacing(5)
+        main_hbox.addSpacing(10)
 
-        name_label = QtWidgets.QLabel("Project Name:")
+        self.name_label = QtWidgets.QLabel("Project Name:")
+        self.name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         name_label_font = QtGui.QFont()
         name_label_font.setPointSize(16)
-        name_label.setFont(name_label_font)
-        main_hbox.addWidget(name_label)
+        self.name_label.setFont(name_label_font)
+        main_hbox.addWidget(self.name_label)
 
-        main_hbox.addSpacing(5)
+        main_hbox.addSpacing(10)
 
         self.line_edit = QtWidgets.QLineEdit()
+        self.line_edit.setStyleSheet(f"color: {app.active_theme['font_color']};")
         line_edit_font = QtGui.QFont()
         line_edit_font.setPointSize(16)
         self.line_edit.setFont(line_edit_font)
@@ -835,9 +894,14 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         self.cancel_button.setToolTip("Cancel")
         main_hbox.addWidget(self.cancel_button)
 
-        main_hbox.addSpacing(25)
+        main_hbox.addSpacing(14)
 
         self.setLayout(main_hbox)
+
+    def reset_stylesheet(self):
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
+        self.name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.line_edit.setStyleSheet(f"color: {app.active_theme['font_color']}")
 
     def cancel(self):
         if self.root:
@@ -941,7 +1005,7 @@ class ProjectEntryWidget(QtWidgets.QWidget):
             if same_name:
                 self.check_button.set_disabled()
                 self.check_button.setPixmap(self.check_button.caution_pixmap)
-                self.check_button.setToolTip("A file with this name already exists at this color.")
+                self.check_button.setToolTip("A file with this name already exists at this level.")
 
             else:
                 self.check_button.set_disabled()
@@ -953,7 +1017,7 @@ class FolderEntryWidget(QtWidgets.QWidget):
     def __init__(self, root=False):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
-        self.setStyleSheet("background-color:white;")
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
         self.setFixedHeight(45)
 
         self.root = root
@@ -961,17 +1025,19 @@ class FolderEntryWidget(QtWidgets.QWidget):
         main_hbox = QtWidgets.QHBoxLayout()
         main_hbox.setContentsMargins(0, 0, 0, 0)
         main_hbox.setSpacing(0)
-        main_hbox.addSpacing(5)
+        main_hbox.addSpacing(10)
 
-        name_label = QtWidgets.QLabel("Folder Name:")
+        self.name_label = QtWidgets.QLabel("Folder Name:")
+        self.name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         name_label_font = QtGui.QFont()
         name_label_font.setPointSize(16)
-        name_label.setFont(name_label_font)
-        main_hbox.addWidget(name_label)
+        self.name_label.setFont(name_label_font)
+        main_hbox.addWidget(self.name_label)
 
-        main_hbox.addSpacing(5)
+        main_hbox.addSpacing(10)
 
         self.line_edit = QtWidgets.QLineEdit()
+        self.line_edit.setStyleSheet(f"color: {app.active_theme['font_color']};")
         line_edit_font = QtGui.QFont()
         line_edit_font.setPointSize(16)
         self.line_edit.setFont(line_edit_font)
@@ -996,9 +1062,14 @@ class FolderEntryWidget(QtWidgets.QWidget):
         self.cancel_button.setToolTip("Cancel")
         main_hbox.addWidget(self.cancel_button)
 
-        main_hbox.addSpacing(25)
+        main_hbox.addSpacing(14)
 
         self.setLayout(main_hbox)
+
+    def reset_stylesheet(self):
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
+        self.name_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.line_edit.setStyleSheet(f"color: {app.active_theme['font_color']}")
 
     def cancel(self):
         if self.root:
@@ -1099,7 +1170,7 @@ class FolderEntryWidget(QtWidgets.QWidget):
             if same_name:
                 self.check_button.set_disabled()
                 self.check_button.setPixmap(self.check_button.caution_pixmap)
-                self.check_button.setToolTip("A file with this name already exists at this color.")
+                self.check_button.setToolTip("A file with this name already exists at this level.")
 
             else:
                 self.check_button.set_disabled()
@@ -1111,7 +1182,7 @@ class AddProjectButton(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
-        self.setStyleSheet("background-color:white;")
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
 
         add_project_button_hbox = QtWidgets.QHBoxLayout()
         add_project_button_hbox.setSpacing(10)
@@ -1124,11 +1195,12 @@ class AddProjectButton(QtWidgets.QWidget):
         self.plus_label.setPixmap(self.plus_before_pixmap)
         add_project_button_hbox.addWidget(self.plus_label)
 
-        add_project_label = QtWidgets.QLabel("Add Project")
+        self.add_project_label = QtWidgets.QLabel("Add Project")
+        self.add_project_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         add_project_label_font = QtGui.QFont()
         add_project_label_font.setPointSize(16)
-        add_project_label.setFont(add_project_label_font)
-        add_project_button_hbox.addWidget(add_project_label)
+        self.add_project_label.setFont(add_project_label_font)
+        add_project_button_hbox.addWidget(self.add_project_label)
 
         add_project_button_hbox.addStretch()
 
@@ -1140,11 +1212,11 @@ class AddProjectButton(QtWidgets.QWidget):
         app.main_window.project_entry_widget.line_edit.setFocus(True)
 
     def enterEvent(self, ev):
-        self.setStyleSheet("background-color:lightgrey;")
+        self.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
         self.plus_label.setPixmap(self.plus_after_pixmap)
 
     def leaveEvent(self, ev):
-        self.setStyleSheet("background-color:white;")
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
         self.plus_label.setPixmap(self.plus_before_pixmap)
 
 
@@ -1153,7 +1225,7 @@ class AddFolderButton(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
-        self.setStyleSheet("background-color:white;")
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
 
         add_folder_button_hbox = QtWidgets.QHBoxLayout()
         add_folder_button_hbox.setSpacing(10)
@@ -1162,15 +1234,16 @@ class AddFolderButton(QtWidgets.QWidget):
 
         self.add_folder_before_pixmap = QtGui.QPixmap(app.program_data_dir + "/images/add_folder_before.png")
         self.add_folder_after_pixmap = QtGui.QPixmap(app.program_data_dir + "/images/add_folder_after.png")
-        self.add_folder_label = QtWidgets.QLabel()
-        self.add_folder_label.setPixmap(self.add_folder_before_pixmap)
-        add_folder_button_hbox.addWidget(self.add_folder_label)
+        self.add_folder_image = QtWidgets.QLabel()
+        self.add_folder_image.setPixmap(self.add_folder_before_pixmap)
+        add_folder_button_hbox.addWidget(self.add_folder_image)
 
-        add_folder_label = QtWidgets.QLabel("Add Folder")
+        self.add_folder_label = QtWidgets.QLabel("Add Folder")
+        self.add_folder_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
         add_folder_label_font = QtGui.QFont()
         add_folder_label_font.setPointSize(16)
-        add_folder_label.setFont(add_folder_label_font)
-        add_folder_button_hbox.addWidget(add_folder_label)
+        self.add_folder_label.setFont(add_folder_label_font)
+        add_folder_button_hbox.addWidget(self.add_folder_label)
 
         add_folder_button_hbox.addStretch()
 
@@ -1182,12 +1255,12 @@ class AddFolderButton(QtWidgets.QWidget):
         app.main_window.folder_entry_widget.line_edit.setFocus(True)
 
     def enterEvent(self, ev):
-        self.setStyleSheet("background-color:lightgrey;")
-        self.add_folder_label.setPixmap(self.add_folder_after_pixmap)
+        self.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
+        self.add_folder_image.setPixmap(self.add_folder_after_pixmap)
 
     def leaveEvent(self, ev):
-        self.setStyleSheet("background-color:white;")
-        self.add_folder_label.setPixmap(self.add_folder_before_pixmap)
+        self.setStyleSheet(f"background:{app.active_theme['primary_color']};")
+        self.add_folder_image.setPixmap(self.add_folder_before_pixmap)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -1199,11 +1272,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.app.project_data = load_app.project_data()
         self.settings_widget = SettingsWidget()
         self.setWindowTitle("Time Card App")
-        self.width = 500
-        self.height = 500
-        # self.setFixedSize(self.width, self.height)
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(500)
+        self.base_width = 500
+        self.base_height = 500
+        self.setMinimumSize(self.base_width, self.base_height)
         self.setWindowFlags(QtCore.Qt.CustomizeWindowHint | QtCore.Qt.Tool)
         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
         self.setFocusPolicy(QtCore.Qt.ClickFocus)
@@ -1238,24 +1309,29 @@ class MainWindow(QtWidgets.QMainWindow):
         return 0
 
     def set_main_position(self):
-        self.move(working_width - self.width - 7, working_height - self.height - 6)
+        self.move(working_width - self.base_width - 7, working_height - self.base_height - 6)
+
+    def settings_clicked(self):
+        center_window(self.settings_widget, app.main_window)
+        self.settings_widget.show()
 
     def init_titlebar(self):
         self.titlebar = QtWidgets.QWidget()
         self.titlebar.setFixedHeight(34)
         self.titlebar.setContentsMargins(0, 0, 0, 0)
-        self.titlebar.setStyleSheet("background-color:lightgrey;")
+        self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
 
         titlebar_hbox = QtWidgets.QHBoxLayout()
         titlebar_hbox.setContentsMargins(0, 0, 0, 0)
         titlebar_hbox.setSpacing(0)
-        titlebar_hbox.addSpacing(3)
+        titlebar_hbox.addSpacing(10)
 
-        window_title_label = QtWidgets.QLabel("Time Card App")
+        self.window_title_label = QtWidgets.QLabel("Time Card App")
+        self.window_title_label.setStyleSheet(f"color: {app.active_theme['font_color']};")
         font = QtGui.QFont()
         font.setPointSize(14)
-        window_title_label.setFont(font)
-        titlebar_hbox.addWidget(window_title_label)
+        self.window_title_label.setFont(font)
+        titlebar_hbox.addWidget(self.window_title_label)
 
         titlebar_hbox.addStretch()
 
@@ -1269,7 +1345,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         settings_button_label = ButtonLabel(app.program_data_dir + "/images/gear_before.png",
                                             app.program_data_dir + "/images/gear_after.png")
-        settings_button_label.clicked.connect(self.settings_widget.show)
+        settings_button_label.clicked.connect(self.settings_clicked)
         settings_button_label.setToolTip("Settings")
         titlebar_hbox.addWidget(settings_button_label)
         titlebar_hbox.addSpacing(5)
@@ -1286,14 +1362,14 @@ class MainWindow(QtWidgets.QMainWindow):
         exit_button_label.clicked.connect(self.exit)
         exit_button_label.setToolTip("Exit")
         titlebar_hbox.addWidget(exit_button_label)
-        titlebar_hbox.addSpacing(5)
+        titlebar_hbox.addSpacing(10)
 
         self.titlebar.setLayout(titlebar_hbox)
 
     def init_central_widget(self):
         self.central_widget = QtWidgets.QWidget()
         self.central_widget.setContentsMargins(0, 0, 0, 0)
-        self.central_widget.setStyleSheet("background-color:white;")
+        self.central_widget.setStyleSheet(f"background:{app.active_theme['primary_color']};")
 
         main_hbox = QtWidgets.QHBoxLayout()
         main_hbox.setSpacing(0)
@@ -1366,7 +1442,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scroll_widget.setLayout(self.scroll_widget_vbox)
 
         self.scroll_area = QtWidgets.QScrollArea()
-        self.scroll_area.setVerticalScrollBar(ScrollBar())
+        self.scrollbar = ScrollBar()
+        self.scroll_area.setVerticalScrollBar(self.scrollbar)
         self.scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         # self.scroll_area.setFixedSize(500, 464)
         self.scroll_area.setMinimumWidth(2)
@@ -1383,12 +1460,12 @@ class MainWindow(QtWidgets.QMainWindow):
         add_buttons_widget_hbox.setSpacing(0)
         add_buttons_widget_hbox.setContentsMargins(0, 0, 0, 0)
 
-        add_project_button = AddProjectButton()
-        add_folder_button = AddFolderButton()
+        self.add_project_button = AddProjectButton()
+        self.add_folder_button = AddFolderButton()
 
-        add_buttons_widget_hbox.addWidget(add_project_button)
+        add_buttons_widget_hbox.addWidget(self.add_project_button)
         add_buttons_widget_hbox.addWidget(get_separator(1, 45))
-        add_buttons_widget_hbox.addWidget(add_folder_button)
+        add_buttons_widget_hbox.addWidget(self.add_folder_button)
 
         self.add_buttons_widget.setLayout(add_buttons_widget_hbox)
 
@@ -1485,6 +1562,10 @@ if __name__ == "__main__":
         app.settings["version"] = app.version
         save_settings()
         save_project_data()
+
+    app.active_theme = app.themes[app.settings["theme"]]
+
+    # app.active_theme = app.themes["Dark"]  # Force Theme
 
     app.main_window = MainWindow()
 

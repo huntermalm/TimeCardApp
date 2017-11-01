@@ -14,7 +14,8 @@ class SettingsWidget(QtWidgets.QFrame):
         self.setWindowTitle("Time Card App Settings")
         self.setFixedSize(400, 150)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
-        self.setStyleSheet("background: white;")
+        self.setObjectName("hotkeyWidget")
+        self.setStyleSheet(f"QWidget#hotkeyWidget {{ background: {app.active_theme['primary_color']}; }}")
         self.setFrameStyle(QtWidgets.QFrame.Box)
 
         self.main_vbox = QtWidgets.QVBoxLayout()
@@ -31,10 +32,15 @@ class SettingsWidget(QtWidgets.QFrame):
         self.settings_vbox.setSpacing(10)
         self.settings_vbox.setContentsMargins(10, 10, 10, 10)
 
-        version_label = QtWidgets.QLabel(f"Version: {app.version}")
-        self.settings_vbox.addWidget(version_label)
+        self.version_label = QtWidgets.QLabel(f"Version: {app.version}")
+        self.version_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.settings_vbox.addWidget(self.version_label)
 
         self.check_for_updates_checkbox = QtWidgets.QCheckBox("Check for updates")
+        self.check_for_updates_checkbox.setStyleSheet(f"color: {app.active_theme['font_color']};")
+
+        self.theme_hbox = QtWidgets.QHBoxLayout()
+        self.theme_hbox.setSpacing(3)
 
         if app.settings["check_for_updates"]:
             self.check_for_updates_checkbox.setCheckState(QtCore.Qt.Checked)
@@ -43,27 +49,76 @@ class SettingsWidget(QtWidgets.QFrame):
 
         self.settings_vbox.addWidget(self.check_for_updates_checkbox)
 
+        self.theme_label = QtWidgets.QLabel("Theme:")
+        self.theme_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.theme_hbox.addWidget(self.theme_label)
+
+        self.theme_combobox = ComboBox()
+        self.theme_combobox.setFixedSize(50, 20)
+        self.theme_combobox.activated.connect(self.combobox_changed)
+        for theme in app.themes:
+            self.theme_combobox.addItem(theme)
+
+        self.theme_combobox.setCurrentIndex(self.theme_combobox.findText(app.settings["theme"]))
+
+        self.theme_hbox.addWidget(self.theme_combobox)
+
+        self.theme_hbox.addStretch()
+
+        self.settings_vbox.addLayout(self.theme_hbox)
+
         self.main_vbox.addLayout(self.settings_vbox)
 
         self.main_vbox.addStretch()
 
         self.setLayout(self.main_vbox)
 
+    def reset_stylesheet(self):
+        self.version_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.check_for_updates_checkbox.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.theme_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        self.theme_combobox.reset_stylesheet()
+        self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
+        self.setStyleSheet(f"QWidget#hotkeyWidget {{ background: {app.active_theme['primary_color']}; }}")
+        self.window_title_label.setStyleSheet(f"color: {app.active_theme['font_color']};")
+
+    def combobox_changed(self):
+        app.active_theme = app.themes[self.theme_combobox.currentText()]
+        app.settings["theme"] = self.theme_combobox.currentText()
+        app.save_settings()
+
+        self.reset_stylesheet()
+
+        app.main_window.central_widget.setStyleSheet(f"background:{app.active_theme['primary_color']};")
+        app.main_window.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
+        app.main_window.window_title_label.setStyleSheet(f"color: {app.active_theme['font_color']};")
+        app.main_window.add_project_button.setStyleSheet(f"background:{app.active_theme['primary_color']};")
+        app.main_window.add_project_button.add_project_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        app.main_window.add_folder_button.setStyleSheet(f"background:{app.active_theme['primary_color']};")
+        app.main_window.add_folder_button.add_folder_label.setStyleSheet(f"color: {app.active_theme['font_color']}")
+        app.main_window.project_entry_widget.reset_stylesheet()
+        app.main_window.folder_entry_widget.reset_stylesheet()
+        app.main_window.scrollbar.reset_stylesheet()
+
+        for file_widget in app.all_file_widgets:
+            file_widget.reset_stylesheet()
+
     def init_titlebar(self):
         self.titlebar = QtWidgets.QWidget()
         self.titlebar.setFixedHeight(34)
-        self.titlebar.setStyleSheet("background-color:lightgrey;")
+        self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
 
         titlebar_hbox = QtWidgets.QHBoxLayout()
         titlebar_hbox.setContentsMargins(0, 0, 0, 0)
         titlebar_hbox.setSpacing(0)
-        titlebar_hbox.addSpacing(3)
+        titlebar_hbox.addSpacing(10)
 
-        window_title_label = QtWidgets.QLabel("Time Card App Settings")
+        self.window_title_label = QtWidgets.QLabel("Time Card App Settings")
+        self.window_title_label.setStyleSheet(f"color: {app.active_theme['font_color']};")
         font = QtGui.QFont()
         font.setPointSize(12)
-        window_title_label.setFont(font)
-        titlebar_hbox.addWidget(window_title_label)
+        self.window_title_label.setFont(font)
+        titlebar_hbox.addWidget(self.window_title_label)
 
         titlebar_hbox.addStretch()
 
@@ -72,7 +127,7 @@ class SettingsWidget(QtWidgets.QFrame):
         exit_button_label.clicked.connect(self.hide)
         exit_button_label.setToolTip("Exit")
         titlebar_hbox.addWidget(exit_button_label)
-        titlebar_hbox.addSpacing(5)
+        titlebar_hbox.addSpacing(10)
 
         self.titlebar.setLayout(titlebar_hbox)
 
