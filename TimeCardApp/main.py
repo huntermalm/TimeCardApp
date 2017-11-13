@@ -979,8 +979,6 @@ class ProjectEntryWidget(QtWidgets.QWidget):
         new_folder_name = self.line_edit.text().strip()
 
         if new_folder_name:
-            same_name = False
-
             if self.root:
                 files = app.project_data
 
@@ -1144,8 +1142,6 @@ class FolderEntryWidget(QtWidgets.QWidget):
         new_folder_name = self.line_edit.text().strip()
 
         if new_folder_name:
-            same_name = False
-
             if self.root:
                 files = app.project_data
 
