@@ -87,7 +87,7 @@ key_dict = {
     }
 
 
-class HotkeyWidget(QtWidgets.QFrame):
+class HotkeyWidget(QtWidgets.QDialog):
 
     def __init__(self, file, parent_project_widget):
         super().__init__()
@@ -95,12 +95,19 @@ class HotkeyWidget(QtWidgets.QFrame):
         self.file = file
         self.parent_project_widget = parent_project_widget
 
+        self.setModal(True)
         self.setWindowTitle("Hotkey Assignment")
         self.setFixedSize(400, 150)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
         self.setObjectName("hotkeyWidget")
-        self.setStyleSheet(f"QWidget#hotkeyWidget {{ background: {app.active_theme['primary_color']}; }}")
-        self.setFrameStyle(QtWidgets.QFrame.Box)
+
+        frame_widget_vbox = QtWidgets.QVBoxLayout()
+        frame_widget_vbox.setContentsMargins(0, 0, 0, 0)
+        frame_widget_vbox.setSpacing(0)
+
+        self.frame_widget = QtWidgets.QFrame()
+        self.frame_widget.setStyleSheet(f"background: {app.active_theme['primary_color']};")
+        self.frame_widget.setFrameStyle(QtWidgets.QFrame.Box)
 
         self.main_vbox = QtWidgets.QVBoxLayout()
         self.main_vbox.setContentsMargins(0, 0, 0, 0)
@@ -196,10 +203,14 @@ class HotkeyWidget(QtWidgets.QFrame):
         self.main_vbox.addLayout(self.hotkey_vbox)
         self.main_vbox.addStretch()
 
-        self.setLayout(self.main_vbox)
+        self.frame_widget.setLayout(self.main_vbox)
+
+        frame_widget_vbox.addWidget(self.frame_widget)
+
+        self.setLayout(frame_widget_vbox)
 
     def reset_stylesheet(self):
-        self.setStyleSheet(f"QWidget#hotkeyWidget {{ background: {app.active_theme['primary_color']}; }}")
+        self.frame_widget.setStyleSheet(f"background: {app.active_theme['primary_color']};")
         self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
         self.window_title_label.setStyleSheet(f"color:{app.active_theme['font_color']};")
         self.project_label.setStyleSheet(f"color: {app.active_theme['font_color']}")

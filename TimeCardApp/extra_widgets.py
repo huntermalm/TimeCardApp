@@ -19,7 +19,7 @@ def get_separator(width, height, fully_fixed=False):
             separator.setFixedHeight(1)
             separator.setMinimumWidth(width)
 
-    separator.setStyleSheet("background-color:black;")
+    separator.setStyleSheet("background:black;")
     return separator
 
 

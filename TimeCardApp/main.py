@@ -1279,7 +1279,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
         self.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.installEventFilter(self)
-        self.setContentsMargins(0, 0, 0, 0)
         self.set_main_position()
 
         self.init_central_widget()
@@ -1318,7 +1317,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_titlebar(self):
         self.titlebar = QtWidgets.QWidget()
         self.titlebar.setFixedHeight(34)
-        self.titlebar.setContentsMargins(0, 0, 0, 0)
         self.titlebar.setStyleSheet(f"background:{app.active_theme['secondary_color']};")
 
         titlebar_hbox = QtWidgets.QHBoxLayout()
@@ -1368,7 +1366,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_central_widget(self):
         self.central_widget = QtWidgets.QWidget()
-        self.central_widget.setContentsMargins(0, 0, 0, 0)
         self.central_widget.setStyleSheet(f"background:{app.active_theme['primary_color']};")
 
         main_hbox = QtWidgets.QHBoxLayout()
@@ -1537,8 +1534,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.trayIcon.setIcon(icon)
         self.setWindowIcon(icon)
 
-        self.trayIcon.setToolTip("Time Card App")
-
     def createTrayIcon(self):
         self.trayIconMenu = QtWidgets.QMenu(self)
         self.trayIconMenu.addAction(self.minimizeAction)
@@ -1548,9 +1543,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.trayIcon = QtWidgets.QSystemTrayIcon(self)
         self.trayIcon.setContextMenu(self.trayIconMenu)
+        self.trayIcon.setToolTip("Time Card App")
         self.trayIcon.activated.connect(self.iconActivated)
 
     def iconActivated(self, reason):
+        print(reason)
         if reason in (QtWidgets.QSystemTrayIcon.Trigger, QtWidgets.QSystemTrayIcon.DoubleClick):
             self.restore()
 
